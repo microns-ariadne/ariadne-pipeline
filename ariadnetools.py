@@ -1,4 +1,5 @@
 # This is a flat set of functions that are useful to the rest of the project
+import os
 
 # Gets a file extension from a URL or filename:
 def getExtension(name):
@@ -46,3 +47,45 @@ def getDefType(filename):
 
 def getDefName(filename):
 	return getDefAttrib(filename, "name")
+
+def fileExists(filename, extensions=[]):
+	if extensions==[]:
+		return os.path.isfile(filename)
+
+	curStatus=0
+
+	for e in extensions:
+		curStatus=curStatus or fileExists(filename+e)
+
+	return curStatus
+
+# Removes any blank strings from the specified list.
+def trimBlankStrings(arr):
+	while 1:
+		try:
+			arr.remove('')
+		except ValueError:
+			break
+
+# Pairs off arguments and values.
+def argPair(argv, startArg=0):
+	argList=[]
+	
+	for a in argv[startArg:]
+		toks=a.split('=')
+		if len(toks)==1:
+			toks.append("")
+		argList.append(toks)
+	return argList
+
+# Strips all strings in a list.
+def stripList(lst, stripStr=""):
+	retList=[]
+	
+	for s in lst:
+		if stripStr=="":
+			retList.append(s.strip())
+		else:
+			retList.append(s.strip(stripStr))
+
+	return retList

@@ -45,19 +45,19 @@ def doRun(paramList):
 		if param[0]=="--help":
 			printRunHelp()
 		elif param[0][0]=="-":
-			execArgs.append(param[0])
+			execArgs.append(param[1])
 		else:
 			pipeName=param[0]
 
 	p=Pipeline.Pipeline(pipeName+".pipeline")
 
 	# Strip all of the names off of the args list for now:
-	finalArgs=[]
-	for e in execArgs:
-		if e[1]!="":
-			finalArgs.append(e[1])
+	#finalArgs=[]
+	#for e in execArgs:
+#		if e[1]!="":
+#			finalArgs.append(e)
 
-	p.executePipe(finalArgs)
+	p.executePipe(execArgs)
 
 def doInteractiveCreate():
 	o=sys.stdout

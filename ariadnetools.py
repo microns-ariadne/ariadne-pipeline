@@ -59,6 +59,14 @@ def fileExists(filename, extensions=[]):
 
 	return curStatus
 
+def whichFileExists(filename, extensions):
+	if fileExists(filename):
+		return filename
+	for e in extensions:
+		if fileExists(filename+e):
+			return filename+e
+	return ""
+
 # Removes any blank strings from the specified list.
 def trimBlankStrings(arr):
 	while 1:
@@ -71,7 +79,7 @@ def trimBlankStrings(arr):
 def argPair(argv, startArg=0):
 	argList=[]
 	
-	for a in argv[startArg:]
+	for a in argv[startArg:]:
 		toks=a.split('=')
 		if len(toks)==1:
 			toks.append("")

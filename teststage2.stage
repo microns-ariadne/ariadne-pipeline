@@ -1,0 +1,13 @@
+name:
+teststage2
+type:
+stage
+dependencies:
+teststage1 dirname
+arguments:
+dirname OTHER
+filename OTHER
+commands:
+EXEC ./touchfile.sh dirname filename
+outputs:
+#

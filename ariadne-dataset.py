@@ -8,6 +8,10 @@ import DatasetDefs
 
 import ariadnetools
 
+# Validates whether the pipeline can accept the given dataset's files.
+def doValidate():
+	return
+
 def printUsage():
 	print("Usage: ariadne-dataset <command> [args]")
 	print("")

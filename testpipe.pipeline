@@ -1,0 +1,8 @@
+name:
+testpipe
+type:
+pipeline
+stages:
+teststage1
+topstage:
+teststage2

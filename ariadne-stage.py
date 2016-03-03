@@ -54,15 +54,18 @@ def doCreateInteractive():
 
 	print("\nEnter arguments as a comma-separated list:")
 	print("eg. A INT, B OTHER, C DATE\n")
-	s.args=ariadnetools.striplist(i.readline().strip().split(','))
+	s.arguments=ariadnetools.stripList(i.readline().strip().split(','))
+	ariadnetools.trimBlankStrings(s.arguments)
 
 	print("\nEnter dependencies as a comma-separated list:")
 	print("eg. foo(A), bar(B)\n")
-	s.dependencies=ariadnetools.striplist(i.readline().strip().split(','))
+	s.dependencies=ariadnetools.stripList(i.readline().strip().split(','))
+	ariadnetools.trimBlankStrings(s.dependencies)
 
 	print("\nEnter commands as a comma-separated list:")
 	print("eg. EXEC ls >C, NATIVE f=open(C)\n")
-	s.commands=ariadnetools.striplist(i.readline().strip().split(','))
+	s.commands=ariadnetools.stripList(i.readline().strip().split(','))
+	ariadnetools.trimBlankStrings(s.commands)
 
 	print("Writing stage definition file...")
 	s.writeFile(s.name+".stage")
@@ -76,6 +79,11 @@ def doCreate(args):
 	rawDependencies=[]
 	output=""
 	name=""
+
+	if len(args)==0:
+		doCreateInteractive()
+		return
+
 
 	for a in args:
 		if a[0]=="--interactive":
@@ -92,6 +100,8 @@ def doCreate(args):
 			output=a[1]
 		elif a[0]=="--name":
 			name=a[1]
+		elif a[0]=="--help":
+			printCreateHelp()
 
 	s=Pipeline.Stage()
 	if sourceFile=="":
@@ -99,7 +109,7 @@ def doCreate(args):
 		s.directModuleName=sourceFile
 	s.name=name
 	s.commands=cmdList
-	s.dependencies=rawDependencies()
+	s.dependencies=rawDependencies
 	s.arguments=rawArgList
 	s.output.append(output)
 
@@ -107,10 +117,54 @@ def doCreate(args):
 	
 	return
 
+def printShowHelp():
+	print("Usage: ariadne-stage show stagename")
+	print("Show information about a stage definition")
+	exit(1)
+
 def doShow(args):
+	if len(args)==0:
+		printShowHelp()
+
+	filename=args[0][0]
+	
+	s=Pipeline.Stage(ariadnetools.whichFileExists(filename, [".def", ".stage"]))
+
+	print("Stage dependencies:")
+	for d in s.dependencies:
+		print("\t"+d)
+
+	print("Stage argument variables:")
+	for a in s.arguments:
+		print("\t"+a)
+
+	print("Stage commands:")
+	for c in s.commands:
+		print("\t"+c)
+
+	print("Stage outputs:")
+	if len(s.output)==0:
+		print("\tNone. NOTE: Task completion will not be checked!")
+	for o in s.output:
+		print("\t"+o)
 	return
 
+def printCompileHelp():
+	print("Usage: ariadne-stage compile stagename")
+	print("Generate a luigi module from a stage definition.")
+	exit(1)
+
 def doCompile(args):
+	if len(args)==0:
+		printCompileHelp()
+	
+	filename=args[0][0]
+
+	print("Loading stage file...")
+	s=Pipeline.Stage(ariadnetools.whichFileExists(filename, [".def", ".stage"]))
+	print("Done. Building...")
+	s.genLuigiFile(filename+".py")
+	print("Wrote output file: "+filename+".py")
 	return
 
 def doRun(args):
@@ -128,9 +182,9 @@ if command=="create":
 	doCreate(args)
 elif command=="show":
 	doShow(args)
-elif command="compile":
+elif command=="compile":
 	doCompile(args)
-elif command="run":
+elif command=="run":
 	doRun(args)
 else:
 	print("Invalid command: "+command)

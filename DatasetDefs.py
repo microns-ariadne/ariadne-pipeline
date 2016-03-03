@@ -1,9 +1,15 @@
 # This file contains definitions and classes related to ariadne-dataset.
+import os
 
 class Def:
 	# Have some internal state handy:
 	urlList=[]
 	datasetName=""
+	validationScript=""
+	formatSpec=[]
+
+	def validate(self):
+		return os.system(validationScript)
 	
 	def writeFile(self, filename):
 		f=open(filename, "w")

@@ -1,0 +1,10 @@
+name:
+autoteststage
+type:
+stage
+dependencies:
+arguments:
+A OTHER
+commands:
+EXEC ls -l A
+outputs:

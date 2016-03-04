@@ -10,3 +10,5 @@ NATIVE print("Dirname:"+self.drname)
 EXEC mkdir drname
 outputs:
 FILE drname
+validationscript:
+./teststage1-validation.sh

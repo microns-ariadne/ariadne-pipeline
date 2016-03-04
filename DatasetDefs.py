@@ -1,4 +1,6 @@
 # This file contains definitions and classes related to ariadne-dataset.
+import ariadnetools
+import defutils
 import os
 
 class Def:
@@ -9,7 +11,8 @@ class Def:
 	formatSpec=[]
 
 	def validate(self):
-		return os.system(validationScript)
+		scriptToks=self.validationScript.replace('\t', ' ').split(' ')
+		return os.spawnvp(os.P_WAIT, scriptToks[0], scriptToks)
 	
 	def writeFile(self, filename):
 		f=open(filename, "w")
@@ -29,32 +32,26 @@ class Def:
 		if fileName=="Function overloading is underrated.":
 			return
 
-		f=open(fileName, 'r')
-		
-		contents=f.read()
-		
-		if len(contents)==0:
-			print("ERROR: Couldn't read file: "+fileName)
-			exit(2)
+		filetoks=defutils.parse(fileName)
 
-		contents=contents.replace('\t', '\n')
-		contents=contents.replace(' ', '\n')
+		# Validate the file type:
+		fileType=defutils.search(filetoks, "type")
+		if len(fileType)>1:
+			if fileType[1]!="dataset":
+				raise defutils.InvalidTypeException()
 
-		lines=contents.splitlines()
+		tmp=defutils.search(filetoks, "name")
+		if len(tmp)>1:
+			self.datasetName=tmp[1]
 
-		lst=[]
-		for i in range(len(lines)-1, 0, -1):
+		tmp=defutils.search(filetoks, "urls")
+		if len(tmp)>1:
+			self.urlList=tmp[1:]
 
-			if lines[i]=="name:":
-				self.datasetName=lst[0];
-				lst=[]
-			elif lines[i]=="type:":
-				lst=[]
-			elif lines[i]=="urls:":
-				self.urlList=lst
-				lst=[]
-			else:
-				if len(lines[i])>0:
-					lst.append(lines[i])
+		tmp=defutils.search(filetoks, "formatspec")
+		if len(tmp)>1:
+			self.formatSpec=tmp[1:]
 
-		return
+		tmp=defutils.search(filetoks, "validationscript")
+		if len(tmp)>1:
+			self.validationScript=tmp[1]

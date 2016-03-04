@@ -6,3 +6,6 @@ stages:
 teststage1
 topstage:
 teststage2
+validationarguments:
+testdiarr
+testfile

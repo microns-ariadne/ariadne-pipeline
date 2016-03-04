@@ -16,12 +16,22 @@ def printUsage():
 	print("Usage: ariadne-dataset <command> [args]")
 	print("")
 	print("Where <command> is one of the following:")
-	print("\tfetch  \t Fetch a dataset specified by name.")
-	print("\tlist   \t List all dataset files in the current directory.")
-	print("\tcreate \t Creates a dataset definition file.")
-	print("\tshow   \t Print information about a dataset.")
+	print("\tfetch   \t Fetch a dataset specified by name.")
+	print("\tlist    \t List all dataset files in the current directory.")
+	print("\tcreate  \t Creates a dataset definition file.")
+	print("\tshow    \t Print information about a dataset.")
+	print("\tvalidate\t Run a dataset's validation script.")
 	exit(1)
 
+def doValidate(dsname):
+	d=DatasetDefs.Def(dsname+".def")
+	retCode=d.validate()
+	if retCode: # Return value !=0
+		print("Validation failed.")
+		print("Script return code: "+str(retCode))
+	else:
+		print("Validation passed.")
+		
 def doFetch(dsname):
 	d=DatasetDefs.Def(dsname+".def")
 

@@ -27,3 +27,5 @@ def parseFormatSpec(specEntry):
 	return x, y, z, formattype, filename
 	
 
+
+

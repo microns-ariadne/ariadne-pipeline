@@ -6,6 +6,7 @@ import os
 import sys
 
 # ariadne-test.py -- Test the pipeline.
+	
 
 def printUsage():
 	print("Usage: ariadne-test <pipelinename> [args]")
@@ -15,9 +16,23 @@ def printUsage():
 	exit(1)
 
 def runTest(pipelineName, datasetName):
-	if datasetName=="":
+	if datasetName!="": #Attempt to fetch the dataset:
+		os.system("ariadne-dataset.py fetch "+datasetName)
 		
-	return
+	p=Pipeline.Pipeline(pipelineName+".pipeline")
+
+	if len(p.validationArgs)==0:
+		print("Pipeline has no validation arguments.")
+		print("Specify arguments and try again.")
+		return
+	p.executePipe(p.validationArgs)
+	
+	valid=p.validate()
+
+	if valid==-1:
+		print("Pipeline validation checks passed.")
+	else:
+		print("Pipeline validation failed on stage: "+p.stages[valid].name)
 
 if len(sys.argv)==1:
 	printUsage()
@@ -33,4 +48,4 @@ if len(sys.argv)>2:
 		print("Invalid parameter: "+argToks[0])
 		printUsage()
 
-runTest(pipename, datsetName)
+runTest(pipeName, datasetName)

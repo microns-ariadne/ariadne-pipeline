@@ -4,14 +4,41 @@ import os
 import sys
 import ariadnetools
 
+class ArgException(Exception):
+    custom_message=""
+    
+
+    def __init__(self, msg=""):
+        self.custom_message=msg
+
+
+    def __str__(self):
+        return "Invalid arguments.\n"+self.custom_message
+
+
+class DependencyContainer:
+    dependency_name=""
+    arg_dict={}
+    
+
+    def __init__(self, depname, args):
+        self.arg_dict=args
+        self.dependency_name=depname
+
+
 class Plugin:
     name=None
-
+    argnames=[]
     
     def run(self, args):
         return
 
     
+    def depends(self):
+        # Should return a list of DependencyContainers.
+        return []
+
+
     def validate(self, args):
         return
 
@@ -22,6 +49,10 @@ class Plugin:
 
     def benchmark(self):
         return
+
+
+    def success(self):
+        return 1
 
     
     def __init__(self, conffile=""):
@@ -86,6 +117,14 @@ def get_plugins(plugin_type):
             ret_list.append(p)
     
     return ret_list
+
+
+def search_plugins(plugin_name):
+    for p in plugin_list:
+        o=p[0]()
+        if o.name==plugin_name:
+            return p[0]
+    return None
 
 
 class DatasetPlugin:

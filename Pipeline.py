@@ -11,440 +11,440 @@ import DatasetDefs
 
 # This is fundamentally just a container class for luigi module generation.
 class Stage:
-	isDirectModule=0
-	directModuleName=""
-	commands=[]
-	dependencies=[]
-	arguments=[]
-	output=[]
-	complete=[]
-	name=""
-	validationScript=""
+    isDirectModule=0
+    directModuleName=""
+    commands=[]
+    dependencies=[]
+    arguments=[]
+    output=[]
+    complete=[]
+    name=""
+    validationScript=""
 
-	# This is used internally by __genArgDef if the user requests an open file.
-	openFilePool=[]
+    # This is used internally by __genArgDef if the user requests an open file.
+    openFilePool=[]
 
-	def validate(self):
-		if self.validationScript=="":
-			return 0
+    def validate(self):
+        if self.validationScript=="":
+            return 0
 
-		scriptToks=self.validationScript.replace('\t', ' ').split(' ')
-		
-		return os.spawnvp(os.P_WAIT, scriptToks[0], scriptToks)
+        scriptToks=self.validationScript.replace('\t', ' ').split(' ')
+        
+        return os.spawnvp(os.P_WAIT, scriptToks[0], scriptToks)
 
-	# Returns the number of non-macro arguments that can be passed.
-	def numArgs(self):
-		i=0
-		for a in self.arguments:
-			toks=a.split(' ')
-			if len(toks)>1:
-				if toks[1]!="DATE":
-					i+=1
+    # Returns the number of non-macro arguments that can be passed.
+    def numArgs(self):
+        i=0
+        for a in self.arguments:
+            toks=a.split(' ')
+            if len(toks)>1:
+                if toks[1]!="DATE":
+                    i+=1
 
-		return i
+        return i
 
-	# Users are allowed to define an argument. 
-	def __genArgDef(self, f, argLine, prefix="\t"):
-		f.write(prefix)
+    # Users are allowed to define an argument. 
+    def __genArgDef(self, f, argLine, prefix="\t"):
+        f.write(prefix)
 
-		# Parse the argument line:
-		argLine=argLine.replace('\t', ' ')
-		toks=argLine.split(' ')
-		
-		varname=""
-		vartype=""
-		default=""
-		if len(toks)>0:
-			varname=toks[0]
-		else:
-			return
-		if len(toks)>1:
-			vartype=toks[1]
-		else:
-			print("Warning: argument type not specified. Assuming INT.")
-			vartype="INT"
-		if len(toks)>2:
-			default=toks[2]
+        # Parse the argument line:
+        argLine=argLine.replace('\t', ' ')
+        toks=argLine.split(' ')
+        
+        varname=""
+        vartype=""
+        default=""
+        if len(toks)>0:
+            varname=toks[0]
+        else:
+            return
+        if len(toks)>1:
+            vartype=toks[1]
+        else:
+            print("Warning: argument type not specified. Assuming INT.")
+            vartype="INT"
+        if len(toks)>2:
+            default=toks[2]
 
-		f.write(varname+"=")
+        f.write(varname+"=")
 
-		if vartype=="INT":
-			f.write("luigi.IntParameter(")
-		elif vartype=="DATE":
-			f.write("luigi.DateParameter(")
-		elif vartype=="HDFS":
-			f.write("luigi.contrib.hdfs.HdfsTarget(")
-		elif vartype=="INFILE":
-			openFilePool.append([varname, default])
-			f.write("open(")
-		elif vartype=="OUTFILE":
-			openFilepool.append([varname, default])
-			f.write("open("+default+",'w')\n")
-			return
-		else:
-			f.write("luigi.Parameter(")
-		
-		f.write(default+")\n")
+        if vartype=="INT":
+            f.write("luigi.IntParameter(")
+        elif vartype=="DATE":
+            f.write("luigi.DateParameter(")
+        elif vartype=="HDFS":
+            f.write("luigi.contrib.hdfs.HdfsTarget(")
+        elif vartype=="INFILE":
+            openFilePool.append([varname, default])
+            f.write("open(")
+        elif vartype=="OUTFILE":
+            openFilepool.append([varname, default])
+            f.write("open("+default+",'w')\n")
+            return
+        else:
+            f.write("luigi.Parameter(")
+        
+        f.write(default+")\n")
 
-	# Ensures that any files opened when defining arguments are closed at the end.
-	def __genCloseFilePool(self, f):
-		for fdef in self.openFilePool:
-			f.write("\t\tclose("+fdef[0]+")\n")
+    # Ensures that any files opened when defining arguments are closed at the end.
+    def __genCloseFilePool(self, f):
+        for fdef in self.openFilePool:
+            f.write("\t\tclose("+fdef[0]+")\n")
 
-	# Generates a token list that can be used by defutils.
-	def getToks(self):		
-		tokList=[]
+    # Generates a token list that can be used by defutils.
+    def getToks(self):        
+        tokList=[]
 
-		tokList.append(["name", self.name])
-		tokList.append(["type", "stage"])
-		tokList.append(["dependencies"])
-		tokList[len(tokList)-1].extend(self.dependencies)
+        tokList.append(["name", self.name])
+        tokList.append(["type", "stage"])
+        tokList.append(["dependencies"])
+        tokList[len(tokList)-1].extend(self.dependencies)
 
-		tokList.append(["arguments"])
-		tokList[len(tokList)-1].extend(self.arguments)
+        tokList.append(["arguments"])
+        tokList[len(tokList)-1].extend(self.arguments)
 
-		tokList.append(["commands"])
-		tokList[len(tokList)-1].extend(self.commands)
+        tokList.append(["commands"])
+        tokList[len(tokList)-1].extend(self.commands)
 
-		tokList.append(["outputs"])
-		tokList[len(tokList)-1].extend(self.output)
+        tokList.append(["outputs"])
+        tokList[len(tokList)-1].extend(self.output)
 
-		return tokList
+        return tokList
 
-	def writeFile(self, filename):
-		defutils.write(self.getToks(), filename)
+    def writeFile(self, filename):
+        defutils.write(self.getToks(), filename)
 
-	# Returns a list containing a boolean for whether the argument was in the args list
-	# and its transformed name (if possible)
-	def __changeArg(self, argname):
-		retVal=[0, ""]
-		checkStr=""
+    # Returns a list containing a boolean for whether the argument was in the args list
+    # and its transformed name (if possible)
+    def __changeArg(self, argname):
+        retVal=[0, ""]
+        checkStr=""
 
-		splitName=argname.split('.')
+        splitName=argname.split('.')
 
-		# First determine whether it's already been changed:
-		if len(splitName)>1:
-			checkStr=splitName[1]
-			retVal[1]=argname
-		else:
-			checkStr=argname
-			retVal[1]="self."+argname
-		
-		for a in self.arguments:
-			realA=a.split(' ')[0]
-			if realA==checkStr:
-				retVal[0]=1
-				break
+        # First determine whether it's already been changed:
+        if len(splitName)>1:
+            checkStr=splitName[1]
+            retVal[1]=argname
+        else:
+            checkStr=argname
+            retVal[1]="self."+argname
+        
+        for a in self.arguments:
+            realA=a.split(' ')[0]
+            if realA==checkStr:
+                retVal[0]=1
+                break
 
-		return retVal
+        return retVal
 
-	# Appends luigi code onto the specified file
-	def genLuigi(self, f):
-		# Allow modules to be directly written:
-		if self.isDirectModule:
-			inFile=open(self.directModuleName)
-			f.write(inFile.read())
-			return
+    # Appends luigi code onto the specified file
+    def genLuigi(self, f):
+        # Allow modules to be directly written:
+        if self.isDirectModule:
+            inFile=open(self.directModuleName)
+            f.write(inFile.read())
+            return
 
-		#f=open(filename, "w")
-		f.write("# Module generated by ariadne on "+str(datetime.datetime.now())+"\n")
-		#f.write("import luigi\n")
-		#f.write("import os\n")
-		f.write("class "+self.name+"(luigi.Task):\n")
+        #f=open(filename, "w")
+        f.write("# Module generated by ariadne on "+str(datetime.datetime.now())+"\n")
+        #f.write("import luigi\n")
+        #f.write("import os\n")
+        f.write("class "+self.name+"(luigi.Task):\n")
 
-		# Start with arguments:
-		for a in self.arguments:
-			self.__genArgDef(f, a)
-		
-		f.write("\tdef requires(self):\n")
-		f.write("\t\treturn ")
-		for d in self.dependencies:
-			# Determine whether to write out a comma:
-			if d!=self.dependencies[0]:
-				f.write(", ")
+        # Start with arguments:
+        for a in self.arguments:
+            self.__genArgDef(f, a)
+        
+        f.write("\tdef requires(self):\n")
+        f.write("\t\treturn ")
+        for d in self.dependencies:
+            # Determine whether to write out a comma:
+            if d!=self.dependencies[0]:
+                f.write(", ")
 
-			# Print out the dependency:
-			dtoks=d.split(" ")
-			typetok=dtoks[0].strip().upper()
-			if dtoks[0]=="RAW":
-				f.write(d[len(dtoks):].strip())
-			elif dtoks[0]=="CHECKED":
-				f.write(dtoks[1]+"(")
-				for t in dtoks[2:]:
-					transformedArg=self.__changeArg(t)[1]
-					if t!=dtoks[2]:
-						f.write(", ")
-					f.write(transformedArg)
-				f.write(")")
-			else: # Effectively assume "CHECKED":
-				f.write(dtoks[0]+"(")
-				for t in dtoks[1:]:
-					transformedArg=self.__changeArg(t)[1]
-					if t!=dtoks[1]:
-						f.write(", ")
-					f.write(transformedArg)
-				f.write(")")
+            # Print out the dependency:
+            dtoks=d.split(" ")
+            typetok=dtoks[0].strip().upper()
+            if dtoks[0]=="RAW":
+                f.write(d[len(dtoks):].strip())
+            elif dtoks[0]=="CHECKED":
+                f.write(dtoks[1]+"(")
+                for t in dtoks[2:]:
+                    transformedArg=self.__changeArg(t)[1]
+                    if t!=dtoks[2]:
+                        f.write(", ")
+                    f.write(transformedArg)
+                f.write(")")
+            else: # Effectively assume "CHECKED":
+                f.write(dtoks[0]+"(")
+                for t in dtoks[1:]:
+                    transformedArg=self.__changeArg(t)[1]
+                    if t!=dtoks[1]:
+                        f.write(", ")
+                    f.write(transformedArg)
+                f.write(")")
 
-		f.write("\n")
+        f.write("\n")
 
-		f.write("\tdef output(self):\n")
-		f.write("\t\treturn ")		
-		for o in self.output:
-			otStr=o.replace('\t', ' ')
-			oToks=o.split(' ')
+        f.write("\tdef output(self):\n")
+        f.write("\t\treturn ")        
+        for o in self.output:
+            otStr=o.replace('\t', ' ')
+            oToks=o.split(' ')
 
-			if oToks[0]=="RAW":
-				f.write(o[len(oToks[0]):].strip()+"\n")
-			elif oToks[0]=="FILE": # Determine how the file is specified
-				if oToks[1]=="RAW": # The filename is determined by the contents of the line.
-					f.write("luigi.LocalTarget("+o[len(oToks[0]+" "+oToks[1]):].strip()+")")
-				elif oToks[1]=="VARCAT":
-					f.write("luigi.LocalTarget(")
-					for tok in oToks[2:]:
-						if tok!=oToks[2]:
-							f.write("+")
-						f.write(self.__changeArg(tok)[1])
-					f.write(")")
-				else:
-					f.write("luigi.LocalTarget("+self.__changeArg(oToks[1])[1]+")")
-		f.write("\n")
-		
-		f.write("\tdef run(self):\n")
-		
-		for c in self.commands:
-			# TODO: Insert command substitution magic here.
-			# At the moment, we're just going to go for a passthrough:
-			tokstr=c.replace('\t', ' ')
-			cmdToks=tokstr.split(' ')
-			
-			if len(cmdToks)>0:
-				strippedString=c[len(cmdToks[0]):].strip()
-				prefix=cmdToks[0].upper()
+            if oToks[0]=="RAW":
+                f.write(o[len(oToks[0]):].strip()+"\n")
+            elif oToks[0]=="FILE": # Determine how the file is specified
+                if oToks[1]=="RAW": # The filename is determined by the contents of the line.
+                    f.write("luigi.LocalTarget("+o[len(oToks[0]+" "+oToks[1]):].strip()+")")
+                elif oToks[1]=="VARCAT":
+                    f.write("luigi.LocalTarget(")
+                    for tok in oToks[2:]:
+                        if tok!=oToks[2]:
+                            f.write("+")
+                        f.write(self.__changeArg(tok)[1])
+                    f.write(")")
+                else:
+                    f.write("luigi.LocalTarget("+self.__changeArg(oToks[1])[1]+")")
+        f.write("\n")
+        
+        f.write("\tdef run(self):\n")
+        
+        for c in self.commands:
+            # TODO: Insert command substitution magic here.
+            # At the moment, we're just going to go for a passthrough:
+            tokstr=c.replace('\t', ' ')
+            cmdToks=tokstr.split(' ')
+            
+            if len(cmdToks)>0:
+                strippedString=c[len(cmdToks[0]):].strip()
+                prefix=cmdToks[0].upper()
 
-				# Native assumes that the Python-er knows what they're doing.
-				if prefix=="NATIVE" or prefix=="N":
-					f.write("\t\t"+strippedString+"\n")
-				# Exec does some search and replace magic.
-				elif prefix=="EXEC" or prefix=="E":
-					f.write("\t\tos.spawnlp(os.P_WAIT, '"+cmdToks[1]+"', '"+cmdToks[1]+"'")
-					for t in cmdToks[2:]:
-						tArg=self.__changeArg(t)
-						if tArg[0]:
-							f.write(", "+tArg[1])
-						else:
-							f.write(", '"+t+"'")
-					f.write(")\n")
-				else:
-					print("Warning: command "+c+" not recognized.")
-					f.write("\t\t"+c+"\n")
+                # Native assumes that the Python-er knows what they're doing.
+                if prefix=="NATIVE" or prefix=="N":
+                    f.write("\t\t"+strippedString+"\n")
+                # Exec does some search and replace magic.
+                elif prefix=="EXEC" or prefix=="E":
+                    f.write("\t\tos.spawnlp(os.P_WAIT, '"+cmdToks[1]+"', '"+cmdToks[1]+"'")
+                    for t in cmdToks[2:]:
+                        tArg=self.__changeArg(t)
+                        if tArg[0]:
+                            f.write(", "+tArg[1])
+                        else:
+                            f.write(", '"+t+"'")
+                    f.write(")\n")
+                else:
+                    print("Warning: command "+c+" not recognized.")
+                    f.write("\t\t"+c+"\n")
 
-		self.__genCloseFilePool(f)
+        self.__genCloseFilePool(f)
 
-		f.write("\t\treturn\n")
+        f.write("\t\treturn\n")
 
-		# If there are no outputs to speak of, ensure that the task will report
-		# completion.
-		if len(self.output)==0:
-			f.write("\tdef complete(self):\n")
-			f.write("\t\treturn 1\n")
+        # If there are no outputs to speak of, ensure that the task will report
+        # completion.
+        if len(self.output)==0:
+            f.write("\tdef complete(self):\n")
+            f.write("\t\treturn 1\n")
 
-	def genLuigiFile(self, filename):
-		f=open(filename, "w")
-		f.write("import luigi\n")
-		f.write("import os\n")
-		self.genLuigi(f)
-		f.close()
+    def genLuigiFile(self, filename):
+        f=open(filename, "w")
+        f.write("import luigi\n")
+        f.write("import os\n")
+        self.genLuigi(f)
+        f.close()
 
-	def __init__(self, filename=""):
-		if filename=="":
-			return
+    def __init__(self, filename=""):
+        if filename=="":
+            return
 
-		toks=defutils.parse(filename)
-		
-		fileType=defutils.search(toks, "type")
-		if len(fileType)>1:
-			if fileType[1]=="rawstage":
-				self.isDirectModule=1
-				return
-			if fileType[1]!="stage":
-				raise defutils.InvalidTypeException()
+        toks=defutils.parse(filename)
+        
+        fileType=defutils.search(toks, "type")
+        if len(fileType)>1:
+            if fileType[1]=="rawstage":
+                self.isDirectModule=1
+                return
+            if fileType[1]!="stage":
+                raise defutils.InvalidTypeException()
 
-		# Check if various parsed objects exist:
-		tmp=defutils.search(toks, "commands")
-		if tmp!=[]:
-			self.commands=tmp[1:]
+        # Check if various parsed objects exist:
+        tmp=defutils.search(toks, "commands")
+        if tmp!=[]:
+            self.commands=tmp[1:]
 
-		tmp=defutils.search(toks, "dependencies")
-		if tmp!=[]:
-			self.dependencies=tmp[1:]
-		
-		tmp=defutils.search(toks, "arguments")
-		if tmp!=[]:
-			self.arguments=tmp[1:]
+        tmp=defutils.search(toks, "dependencies")
+        if tmp!=[]:
+            self.dependencies=tmp[1:]
+        
+        tmp=defutils.search(toks, "arguments")
+        if tmp!=[]:
+            self.arguments=tmp[1:]
 
-		tmp=defutils.search(toks, "outputs")
-		if tmp!=[]:
-			self.output=tmp[1:]
+        tmp=defutils.search(toks, "outputs")
+        if tmp!=[]:
+            self.output=tmp[1:]
 
-		tmp=defutils.search(toks, "name")
-		if tmp!=[]:
-			self.name=tmp[1]
+        tmp=defutils.search(toks, "name")
+        if tmp!=[]:
+            self.name=tmp[1]
 
-		tmp=defutils.search(toks, "validationscript")
-		if len(tmp)>1:
-			self.validationScript=tmp[1]
+        tmp=defutils.search(toks, "validationscript")
+        if len(tmp)>1:
+            self.validationScript=tmp[1]
 
 class Pipeline:
-	stages=[]
-	stagesLoaded=0
-	stageNames=[]
-	topStage=None
-	name=""
-	validationArgs=[]
-	benchmarks=[]
+    stages=[]
+    stagesLoaded=0
+    stageNames=[]
+    topStage=None
+    name=""
+    validationArgs=[]
+    benchmarks=[]
 
-	def getToks(self):
-		datList=[]
-		
-		datList.append(["name", self.name])
-		datList.append(["type", "pipeline"])
-		datList.append(["stages"])
-		datList[len(datList)-1].extend(self.stageNames)
-		datList.append(["topstage", self.topStage.name])
-		return datList
+    def getToks(self):
+        datList=[]
+        
+        datList.append(["name", self.name])
+        datList.append(["type", "pipeline"])
+        datList.append(["stages"])
+        datList[len(datList)-1].extend(self.stageNames)
+        datList.append(["topstage", self.topStage.name])
+        return datList
 
-	def writeFile(self, filename):
-		defutils.write(self.getToks(), filename)
+    def writeFile(self, filename):
+        defutils.write(self.getToks(), filename)
 
-	def __splitArg(self, arg):
-		return arg.split(' ')
+    def __splitArg(self, arg):
+        return arg.split(' ')
 
-	def __useArg(self, argToks):
-		return arg[1].upper()=="DATE"
+    def __useArg(self, argToks):
+        return arg[1].upper()=="DATE"
 
-	# Generates a command string for execution:
-	# Currently expects to see args in the same order they were defined. 
-	# This includes blank argumen
-	def __genArgCommand(self, args):
-		execCmd="python -m luigi --module "+self.name+" "+self.topStage.name
+    # Generates a command string for execution:
+    # Currently expects to see args in the same order they were defined. 
+    # This includes blank argumen
+    def __genArgCommand(self, args):
+        execCmd="python -m luigi --module "+self.name+" "+self.topStage.name
 
-		i=0
-		for a in self.topStage.arguments:
-			argToks=self.__splitArg(a)
-			if len(argToks)>1:
-				if i>=len(args):
-					print("ERROR: Not enough arguments specified.")
-					exit(2)
-				if argToks[1]!="DATE":
-					execCmd+=" --"+argToks[0]+" "+args[i]
-					i+=1
+        i=0
+        for a in self.topStage.arguments:
+            argToks=self.__splitArg(a)
+            if len(argToks)>1:
+                if i>=len(args):
+                    print("ERROR: Not enough arguments specified.")
+                    exit(2)
+                if argToks[1]!="DATE":
+                    execCmd+=" --"+argToks[0]+" "+args[i]
+                    i+=1
 
-		execCmd+=" --local-scheduler"
+        execCmd+=" --local-scheduler"
 
-		print("Executing command: "+execCmd)
-		return execCmd
+        print("Executing command: "+execCmd)
+        return execCmd
 
-	def __loadStages(self):
-		self.stages=[]
-		for n in self.stageNames:
-			self.stages.append(Stage(ariadnetools.whichFileExists(n, [".def", ".stage"])))
-		self.stagesLoaded=1
+    def __loadStages(self):
+        self.stages=[]
+        for n in self.stageNames:
+            self.stages.append(Stage(ariadnetools.whichFileExists(n, [".def", ".stage"])))
+        self.stagesLoaded=1
 
-	# Return a sorted list containing all of the stages to execute.
-	def __genStages(self):
-		if not self.stagesLoaded:
-			self.__loadStages()
-		# At present, assume that the user has them sorted.
-		stageList=self.stages
-		stageList.append(self.topStage)
+    # Return a sorted list containing all of the stages to execute.
+    def __genStages(self):
+        if not self.stagesLoaded:
+            self.__loadStages()
+        # At present, assume that the user has them sorted.
+        stageList=self.stages
+        stageList.append(self.topStage)
 
-		for s in self.stages:
-			print("Inserting stage: "+s.name)
+        for s in self.stages:
+            print("Inserting stage: "+s.name)
 
-		return stageList
+        return stageList
 
-	# Runs each stage's validatoin script.
-	# Returns -1 for success or the index of the stage that failed.
-	def validate(self):
-		self.stages.append(self.topStage)
-		for i in range(0, len(self.stages), 1):
-			retCode=self.stages[i].validate()
-			if retCode:
-				return i
+    # Runs each stage's validatoin script.
+    # Returns -1 for success or the index of the stage that failed.
+    def validate(self):
+        self.stages.append(self.topStage)
+        for i in range(0, len(self.stages), 1):
+            retCode=self.stages[i].validate()
+            if retCode:
+                return i
 
-		self.stages.remove(self.topStage)
-		return -1
-		
+        self.stages.remove(self.topStage)
+        return -1
+        
 
-	# Luigi works best when (or outright requires that) every task be defined in one file.
-	def compilePipeline(self, filename):
-		print("Compiling pipeline: "+filename)
-		if ariadnetools.fileExists(filename):
-			os.system("rm "+filename)
-		f=open(filename, "w")
-		f.write("import luigi\n")
-		f.write("import os\n")
+    # Luigi works best when (or outright requires that) every task be defined in one file.
+    def compilePipeline(self, filename):
+        print("Compiling pipeline: "+filename)
+        if ariadnetools.fileExists(filename):
+            os.system("rm "+filename)
+        f=open(filename, "w")
+        f.write("import luigi\n")
+        f.write("import os\n")
 
-		# Now compute a list of modules in the order that they are required:
-		stageList=self.__genStages()
+        # Now compute a list of modules in the order that they are required:
+        stageList=self.__genStages()
 
-		print("Number of reported stages: "+str(len(self.stages)))
-		for s in stageList:
-			s.genLuigi(f)
+        print("Number of reported stages: "+str(len(self.stages)))
+        for s in stageList:
+            s.genLuigi(f)
 
-		f.close()
+        f.close()
 
-	# Starts executing the pipeline.
-	def executePipe(self, args, redirect=0, redirectfile="out.log"):
-		# Generate the pipeline:
-		self.compilePipeline(self.name+".py")
-		cmd=self.__genArgCommand(args)
-		
-		if redirect:
-			p=os.popen(cmd, 'r')
-			contents=p.read()
-			p.close()
-			f=open(redirectfile, "w")
-			f.write(contents)
-			f.close()
-		else:
-			os.system(cmd)
+    # Starts executing the pipeline.
+    def executePipe(self, args, redirect=0, redirectfile="out.log"):
+        # Generate the pipeline:
+        self.compilePipeline(self.name+".py")
+        cmd=self.__genArgCommand(args)
+        
+        if redirect:
+            p=os.popen(cmd, 'r')
+            contents=p.read()
+            p.close()
+            f=open(redirectfile, "w")
+            f.write(contents)
+            f.close()
+        else:
+            os.system(cmd)
 
-	def __init__(self, filename=""):
-		if filename=="":
-			return
+    def __init__(self, filename=""):
+        if filename=="":
+            return
 
-		# Parse the file for all valid attributes:
-		toks=defutils.parse(filename)
+        # Parse the file for all valid attributes:
+        toks=defutils.parse(filename)
 
-		self.name=defutils.search(toks, "name")[1]
+        self.name=defutils.search(toks, "name")[1]
 
-		tmp=defutils.search(toks, "validationarguments")
-		if len(tmp)>1:
-			self.validationArgs=tmp[1:]
+        tmp=defutils.search(toks, "validationarguments")
+        if len(tmp)>1:
+            self.validationArgs=tmp[1:]
 
-		tmp=defutils.search(toks, "benchmarks")
-		if len(tmp)>1:
-			# Tokenize the benchmark and its arguments:
-			for t in tmp[1:]:
-				benchToks=t.split()
-				benchmarks.append(benchToks)
-		
-		fileType=defutils.search(toks, "type")
-		if len(fileType)>1:
-			if fileType[1]!="pipeline":
-				raise defutils.InvalidTypeException()
+        tmp=defutils.search(toks, "benchmarks")
+        if len(tmp)>1:
+            # Tokenize the benchmark and its arguments:
+            for t in tmp[1:]:
+                benchToks=t.split()
+                benchmarks.append(benchToks)
+        
+        fileType=defutils.search(toks, "type")
+        if len(fileType)>1:
+            if fileType[1]!="pipeline":
+                raise defutils.InvalidTypeException()
 
-		stageNames=defutils.search(toks, "stages")
-		for s in stageNames[1:]:
-			self.stages.append(Stage(ariadnetools.whichFileExists(s, [".def", ".stage"])))
+        stageNames=defutils.search(toks, "stages")
+        for s in stageNames[1:]:
+            self.stages.append(Stage(ariadnetools.whichFileExists(s, [".def", ".stage"])))
 
-		self.stagesLoaded=1
+        self.stagesLoaded=1
 
-		topStageInfo=defutils.search(toks, "topstage")
-		if len(topStageInfo)<2:
-			raise defutils.DefFormatException("No final stage specified in file: "+filename)
+        topStageInfo=defutils.search(toks, "topstage")
+        if len(topStageInfo)<2:
+            raise defutils.DefFormatException("No final stage specified in file: "+filename)
 
-		self.topStage=Stage(ariadnetools.whichFileExists(topStageInfo[1], [".def", ".stage"]))
-		#self.topStage.genLuigi(self.topStage.name+".py")
-		
+        self.topStage=Stage(ariadnetools.whichFileExists(topStageInfo[1], [".def", ".stage"]))
+        #self.topStage.genLuigi(self.topStage.name+".py")
+        

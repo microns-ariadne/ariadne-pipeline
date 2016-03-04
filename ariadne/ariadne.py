@@ -28,6 +28,13 @@ def print_dataset_usage():
     print("\tfetch\tFetch, unpack, and validate a dataset.")
     print("\tlist \tShow all known dataset definitions.")
     print("\tshow \tShow information about a datset.")
+    
+    
+def print_pipeline_usage():
+    print("Usage: ariadne.py pipeline <action> <pipelinename> [pipeline args]")
+    print("Where <action> is one of the following:")
+    print("\trun         \tRun the pipeline.")
+    print("\tcheckdepends\tEnsure that all of the pipeline's modules are present.")
 
 
 def run_dataset(args):
@@ -99,6 +106,23 @@ def run_plugins(args):
         print(str(p[0].name)+"\t"+p[1])
 
 
+def run_pipeline(args):
+    if len(args)<2:
+        print_pipeline_usage()
+        return
+    
+    action=args[0]
+    pipe_name=args[1]
+    
+    if action == "run":
+        pipe_args={}
+        for a in args[2:]:
+            toks=a.split('=')
+            pipe_args[toks[0].strip('-')]=toks[1]
+        p=pipeline.Pipeline(pipe_name+".pipeline", pipe_args)
+        p.run()
+        
+        
 def main(argv):
     # These two are mostly for the benefit of plugins.
     sys.path.append(".")

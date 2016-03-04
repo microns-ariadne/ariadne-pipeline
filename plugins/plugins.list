@@ -1,2 +1,4 @@
 ArchivePlugin targz
 DatasetPlugin rawdataset
+Plugin testpipe1
+Plugin mkdir

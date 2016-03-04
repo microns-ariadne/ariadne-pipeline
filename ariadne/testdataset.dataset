@@ -1,0 +1,7 @@
+name:
+	testdataset
+type:
+	dataset/raw
+urls:
+	http://nose.readthedocs.org/en/latest/writing_tests.html
+

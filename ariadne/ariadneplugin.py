@@ -54,6 +54,10 @@ class Plugin:
     def success(self):
         return 1
 
+
+    def success(self):
+        return 1
+
     
     def __init__(self, args={}, conffile="", conftoks=[]):
         return

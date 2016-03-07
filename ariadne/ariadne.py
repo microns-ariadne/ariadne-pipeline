@@ -180,7 +180,7 @@ def run_benchmark(args):
     
     p=pipeline.Pipeline(pipe_name+".pipeline")
     p.benchmark(argdict)
-    
+
 
 def main(argv):
     # These two are mostly for the benefit of plugins.

@@ -54,10 +54,13 @@ def get_file_exists(filename, extensions):
 
 def get_base_dir():
     try:
-        return os.environ['ARIADNE_BASE']
+        d=os.environ['ARIADNE_BASE']
+        if d[len(d)-1] != '/':
+            d+='/'
+        return d
     except:
         print("WARNING: ARIADNE_BASE undefined.")
-        return ""
+        return "./"
 
 
 def init_plugins():

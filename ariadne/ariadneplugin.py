@@ -30,7 +30,7 @@ class Plugin:
     name=None
     argnames=[]
     
-    def run(self, args):
+    def run(self):
         return
 
     
@@ -39,8 +39,8 @@ class Plugin:
         return []
 
 
-    def validate(self, args):
-        return
+    def validate(self):
+        return 0
 
     
     def check_inputs(self):
@@ -48,14 +48,14 @@ class Plugin:
 
 
     def benchmark(self):
-        return
+        return 0
 
 
     def success(self):
         return 1
 
     
-    def __init__(self, conffile=""):
+    def __init__(self, args={}, conffile="", conftoks=[]):
         return
 
 
@@ -127,23 +127,34 @@ def search_plugins(plugin_name):
     return None
 
 
+def get_can_handle(ext):
+    for p in plugin_list:
+        if p[1]!=PLUGIN_TYPE_GENERIC:
+            pl=p[0]()
+            if pl.can_handle(ext):
+                return p[0]
+    return None
+
+
 class DatasetPlugin:
     # Note: this class is defined at the bottom of the file because it makes
     # use of the ability to search for other plugins.
     name=None
     data_list=[]
     
-    def can_handle(dataset_type):
+    def can_handle(self, dataset_type):
         return 0
     
+
     def validate(self):
-        return
+        return 0
     
     
     def fetch(self, destination):
         basedir=ariadnetools.get_base_dir()
         for d in self.data_list:
             os.system(basedir+"scripts/ariadne-fetch.sh "+d+" "+destination)
+            return 1
 
 
     def unpack(self, destination):
@@ -158,7 +169,16 @@ class DatasetPlugin:
                 p=a[0]()
                 if p.can_handle(ext):
                     p.unpack(destination+"/"+c, destination)
+                return 1
+
+    def get_file_list(self, destination):
+        # This and get_file exist so that stages can get data for themselves.
+        return os.listdir(destination)
 
 
-    def __init__(self, def_filename=""):
+    def get_file(self, destination, name, mode):
+        return open(destination+"/"+name, mode)
+
+
+    def __init__(self, def_filename="", def_tokens=[]):
         return

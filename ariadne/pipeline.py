@@ -6,37 +6,99 @@ import os
 import sys
 
 class Pipeline:
-    topmodule=None
-    topmodule_name=""
-    topmodule_args={}
+    topplugin=None
+    topplugin_name=""
+    topplugin_args={}
     name=""
+    #datasets=[]
 
-    def __runplugin(self, plugin, args):
+    def __runplugin(self, plugin):
         for d in plugin.depends():
+            print("Handling dependency: "+d.dependency_name)
+            
             # Try to find the plugin:
-            depclass=ariadneplugin.search_plugins(d.dependency_name)
-            if depclass!=None:
-                dep=depclass()
-                self.__runplugin(dep, d.arg_dict)
+            depclass = ariadneplugin.search_plugins(d.dependency_name)
+            if depclass != None:
+                dep = depclass(d.arg_dict)
+                self.__runplugin(dep)
             else:
                 print("ERROR: Unresolved dependency. Name: "+d.dependency_name)
-        plugin.run(args)
+        plugin.run()
+        
+        if plugin.success() == 0:
+            print("ERROR: Could not successfully execute plugin: "+plugin.name)
+            exit(2)
 
-    def run(self):
-        tm=self.topmodule()
+
+    def __check_top_stage(self, curplugin):
+        return curplugin.validate()
+
+
+    def __rcsv_get_dep_list(self, pluginname):
+        # TODO: write this efficiently. 
+        pclass=ariadneplugin.search_plugins(pluginname)
+        if pclass==None:
+            return 0
         
-        self.__runplugin(tm, self.topmodule_args)
+        retv=1
+        
+        plugin=pclass()
+        for d in plugin.depends():
+            retv=retv and self.__rcsv_get_dep_list(d.dependency_name)
             
+        return retv
         
-    def __init__(self, deffilename="", args={}):
+
+    def run(self, pipe_args):
+        # TODO: Implement dataset fetching logic here.
+        tpl = self.topplugin(pipe_args)
+        self.__runplugin(tpl)
+        return tpl
+
+            
+    def validate(self, arglist):
+        passnum=0
+        failnum=0
+        for a in arglist:
+            curplugin=self.run(a)
+            if self.__check_top_stage(curplugin):
+                print("PASS: "+a['test_name'])
+                passnum += 1
+            else:
+                print("FAIL: "+a['test_name'])
+                failnum += 1
+        total=passnum+failnum
+        print("Passed %d of %d tests. (%f pct)" % (passnum, total, passnum/total*100))
+
+
+    def benchmark(self, argdict):
+        tpl=self.topplugin(argdict)
+        # It's up to the individual plugin to report stats like accuracy, etc.
+        time_taken=tpl.benchmark()
+        print("Benchmark completed in "+str(time_taken)+" seconds.")
+        print("Benchmark arguments: "+str(argdict))
+    
+
+    def check_dependencies(self):
+        retv=self.__rcsv_get_dep_list(self.topplugin_name)
+        if retv==0:
+            print("ERROR: Not all dependencies satisfied.")
+        else:
+            print("All dependencies present.")
+
+
+    def __init__(self, deffilename="", deftoks=[]):
         if deffilename=="":
-            return
+            return        
+
+        tokens=[]
+        if deftoks == []:
+            tokens = deftools.parse_file(deffilename)
+        else:
+            tokens=deftoks
         
-        self.topmodule_args=args
-        
-        tokens=deftools.parse_file(deffilename)
-        
-        self.topmodule_name=deftools.search(tokens, "topmodule")[0]
+        self.topplugin_name=deftools.search(tokens, "topplugin")[0]
         self.name=deftools.search(tokens, "name")[0]
+        #self.datasets=deftools.search(tokens, "datasets")
         
-        self.topmodule=ariadneplugin.search_plugins(self.topmodule_name)
+        self.topplugin=ariadneplugin.search_plugins(self.topplugin_name)

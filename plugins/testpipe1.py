@@ -9,10 +9,10 @@ class testpipe1(ariadneplugin.Plugin):
 
     
     def depends(self):
-        return [ariadneplugin.DependencyContainer("mkdir", {"dirname": "fancydir"})]
+        return [ariadneplugin.DependencyContainer("mkdir", {"dirname": "yarr"})]
 
 
-    def __init__(self):
+    def __init__(self, args={}):
         return
 
 

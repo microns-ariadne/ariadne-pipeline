@@ -1,0 +1,6 @@
+name:
+	testhdf5
+type:
+	dataset/hdf5
+urls:
+	file:///home/mgohde/coxlab/ariadne-pipeline/out.hdf5

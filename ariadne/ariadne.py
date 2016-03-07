@@ -32,9 +32,19 @@ def print_dataset_usage():
     
 def print_pipeline_usage():
     print("Usage: ariadne.py pipeline <action> <pipelinename> [pipeline args]")
-    print("Where <action> is one of the following:")
+    print("\nWhere <action> is one of the following:")
     print("\trun         \tRun the pipeline.")
     print("\tcheckdepends\tEnsure that all of the pipeline's modules are present.")
+
+
+def print_test_usage():
+    print("Usage: ariadne.py test <pipelinename> <test definition file>")
+
+
+def print_benchmark_usage():
+    print("Usage: ariadne.py benchmark <pipelinename> [pipeline args]")
+    print("\nWhere [pipeline args] is a list of all arguments to send")
+    print("\tto the pipeline.")
 
 
 def run_dataset(args):
@@ -119,10 +129,59 @@ def run_pipeline(args):
         for a in args[2:]:
             toks=a.split('=')
             pipe_args[toks[0].strip('-')]=toks[1]
-        p=pipeline.Pipeline(pipe_name+".pipeline", pipe_args)
-        p.run()
-        
-        
+        p=pipeline.Pipeline(pipe_name+".pipeline")
+        p.run(pipe_args)
+
+    elif action=="checkdepends":
+        p=pipeline.Pipeline(pipe_name+".pipeline")
+        p.check_dependencies()
+
+
+def run_test(args):
+    if len(args) < 2:
+        print_test_usage()
+        return
+
+    pipe_name=args[0]
+    test_filename=args[1]
+    
+    f=open(test_filename, 'r')
+    contents=f.read()
+    f.close()
+    
+    lines=contents.splitlines()
+    arglist=[]
+    
+    for l in lines:
+        linetoks=l.split()
+        name=linetoks[0]
+        argdict={'test_name': name}
+        for t in linetoks[1:]:
+            pair=t.split('=')
+            argdict[pair[0]]=pair[1]
+            print(argdict)
+        arglist.append(argdict)
+
+    p=pipeline.Pipeline(pipe_name+".pipeline")
+    p.validate(arglist)
+
+
+def run_benchmark(args):
+    if len(args)==0:
+        print_benchmark_usage()
+        return
+
+    pipe_name=args[0]
+    argdict={}
+
+    for a in args[1:]:
+        toks=a.split('=')
+        argdict[toks[0]]=toks[1]
+    
+    p=pipeline.Pipeline(pipe_name+".pipeline")
+    p.benchmark(argdict)
+    
+
 def main(argv):
     # These two are mostly for the benefit of plugins.
     sys.path.append(".")

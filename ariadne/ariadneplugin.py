@@ -140,6 +140,10 @@ class DependencyContainer:
 class Plugin:
     name=None
     argnames=[]
+    debugging_args={}
+    start_t=0
+    stop_t=0
+
     
     def run(self):
         return
@@ -159,14 +163,19 @@ class Plugin:
 
 
     def benchmark(self):
-        return 0
+        return self.stop_t-self.start_t
 
 
     def success(self):
         return 1
 
+
+    def print_benchmark(self):
+        print("Benchmark completed in: "+str(self.benchmark())+" seconds.")
+
     
     def __init__(self, args={}, conffile="", conftoks=[]):
+        self.debugging_args=args
         return
 
 

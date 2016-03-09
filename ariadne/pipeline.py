@@ -4,6 +4,7 @@ import ariadnetools
 import ariadneplugin
 import os
 import sys
+import time
 
 class Pipeline:
     topplugin=None
@@ -13,9 +14,10 @@ class Pipeline:
     env_vars=[]
     env_vars_append=[]
     pipe_plugin_dir=""
+    last_plugin_args={}
     #datasets=[]
 
-    def __runplugin(self, plugin):
+    def __runplugin(self, plugin, validation_mode, step_by_step, benchmark_mode):
         for d in plugin.depends():
             print("Handling dependency: "+d.dependency_name)
             
@@ -23,10 +25,26 @@ class Pipeline:
             depclass = ariadneplugin.search_plugins(d.dependency_name)
             if depclass != None:
                 dep = depclass(d.arg_dict)
-                self.__runplugin(dep)
+                self.__runplugin(dep, validation_mode, step_by_step, benchmark_mode)
             else:
                 print("ERROR: Unresolved dependency. Name: "+d.dependency_name)
         plugin.run()
+        
+        if benchmark_mode:
+            plugin.print_benchmark()
+        
+        if validation_mode:
+            valresults=plugin.validate()
+            if valresults:
+                print("PASS: "+plugin.name)
+            else:
+                print("FAIL: "+plugin.name)
+
+            if step_by_step:
+                print("Summary for stage: "+plugin.name)
+                print("\tArguments: "+str(plugin.debugging_args))
+                print("Press <Enter> to continue.")
+                sys.stdin.read(1)
         
         if plugin.success() == 0:
             print("ERROR: Could not successfully execute plugin: "+plugin.name)
@@ -62,19 +80,22 @@ class Pipeline:
         return retv
         
 
-    def run(self, pipe_args):
-        # TODO: Implement dataset fetching logic here.
+    def run(self, pipe_args, validation_mode=0, step_by_step=0, benchmark_mode=0):
         self.__set_environment()
         tpl = self.topplugin(pipe_args)
-        self.__runplugin(tpl)
+        start=time.time()
+        self.__runplugin(tpl, validation_mode, step_by_step, benchmark_mode)
+        total=time.time()-start
+        if benchmark_mode:
+            print("Total time taken to execute the pipeline: "+str(total))
         return tpl
 
             
-    def validate(self, arglist):
+    def validate(self, arglist, step_by_step=0):
         passnum=0
         failnum=0
         for a in arglist:
-            curplugin=self.run(a)
+            curplugin=self.run(a, 1, step_by_step, 0)
             if self.__check_top_stage(curplugin):
                 print("PASS: "+a['test_name'])
                 passnum += 1
@@ -86,11 +107,7 @@ class Pipeline:
 
 
     def benchmark(self, argdict):
-        tpl=self.topplugin(argdict)
-        # It's up to the individual plugin to report stats like accuracy, etc.
-        time_taken=tpl.benchmark()
-        print("Benchmark completed in "+str(time_taken)+" seconds.")
-        print("Benchmark arguments: "+str(argdict))
+        self.run(argdict, 0, 0, 1)
     
 
     def check_dependencies(self):

@@ -54,6 +54,7 @@ Where [pipeline arguments] contains whitespace-separated list of values in the f
 ### ariadne pipeline
 ### ariadne plugins
 
+## Pipeline Definition Files
 ## Plugin API
 
 Ariadne is ultimately a coordinator for a large number of plugins. As such, it is often necessary to develop new plugins to design different pipelines or just to fit different needs. 

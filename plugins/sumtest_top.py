@@ -3,6 +3,7 @@
 
 import ariadneplugin
 import h5py
+import time
 
 plugin_class = "sumtest_top"
 
@@ -12,9 +13,12 @@ class sumtest_top(ariadneplugin.Plugin):
     internalsum=0
     datasetname=""
     checkval=0
+    start_t=0
+    end_t=0
 
 
     def run(self):
+        self.start_t=time.time()
         handler=ariadneplugin.get_can_handle("dataset/hdf5")
         h=handler("testdataset.dataset")
         f=h.get_file("./data/", h.get_file_list("./data/")[0], "r")
@@ -31,10 +35,14 @@ class sumtest_top(ariadneplugin.Plugin):
         d=f.create_dataset("result", (1,))
         d[0]=s
         f.close()
+        self.end_t=time.time()
 
 
     def depends(self):
-        return [ariadneplugin.DependencyContainer("genericfetch", {"datasetname": self.datasetname, "dest": "./data/"})]
+        deplist=[]
+        deplist.append(ariadneplugin.DependencyContainer("mkdir", {"dirname":"data"}))
+        deplist.append(ariadneplugin.DependencyContainer("genericfetch", {"datasetname": self.datasetname, "dest": "./data/"}))
+        return deplist
 
 
     def validate(self):
@@ -46,6 +54,10 @@ class sumtest_top(ariadneplugin.Plugin):
         except:
             print("Exception raised. Failing...")
             return 0
+
+
+    def benchmark(self):
+        return self.end_t-self.start_t
 
 
     def __init__(self, args={}, conffile="", conftoks=[]):

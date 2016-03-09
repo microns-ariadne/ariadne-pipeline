@@ -37,7 +37,9 @@ def print_pipeline_usage():
 
 
 def print_test_usage():
-    print("Usage: ariadne.py test <pipelinename> <test definition file>")
+    print("Usage: ariadne.py test <pipelinename> <test definition file> [args]")
+    print("\nWhere [args] may be one or more of the following:")
+    print("\t-step\tWalks through the pipeline stage by stage.")
 
 
 def print_benchmark_usage():
@@ -154,9 +156,15 @@ def run_pipeline(args):
 
 
 def run_test(args):
+    step=0
+
     if len(args) < 2:
         print_test_usage()
         return
+    elif len(args) > 2:
+        for a in args[2:]:
+            if a == "-step":
+                step=1
 
     pipe_name=args[0]
     test_filename=args[1]
@@ -179,7 +187,7 @@ def run_test(args):
         arglist.append(argdict)
 
     p=pipeline.Pipeline(pipe_name+".pipeline")
-    p.validate(arglist)
+    p.validate(arglist, step)
 
 
 def run_benchmark(args):
@@ -196,6 +204,11 @@ def run_benchmark(args):
     
     p=pipeline.Pipeline(pipe_name+".pipeline")
     p.benchmark(argdict)
+
+
+def run_worker(args):
+    # TODO: Implement support for parallel processing through workers.
+    return
 
 
 def main(argv):
@@ -218,6 +231,8 @@ def main(argv):
         run_pipeline(argv[2:])
     elif argv[1] == "plugins":
         run_plugins(argv[2:])
+    elif argv[1] == "worker":
+        run_worker(argv[2:])
     for a in argv:
         toks = a.split()
 

@@ -4,80 +4,11 @@ import os
 import sys
 import ariadnetools
 
-class ArgException(Exception):
-    custom_message=""
-    
-
-    def __init__(self, msg=""):
-        self.custom_message=msg
-
-
-    def __str__(self):
-        return "Invalid arguments.\n"+self.custom_message
-
-
-class DependencyContainer:
-    dependency_name=""
-    arg_dict={}
-    
-
-    def __init__(self, depname, args):
-        self.arg_dict=args
-        self.dependency_name=depname
-
-
-class Plugin:
-    name=None
-    argnames=[]
-    
-    def run(self):
-        return
-
-    
-    def depends(self):
-        # Should return a list of DependencyContainers.
-        return []
-
-
-    def validate(self):
-        return 0
-
-    
-    def check_inputs(self):
-        return
-
-
-    def benchmark(self):
-        return 0
-
-
-    def success(self):
-        return 1
-
-    
-    def __init__(self, args={}, conffile="", conftoks=[]):
-        return
-
-
-class ArchivePlugin:
-    name=None
-    
-    
-    def can_handle(self, extension):
-        return 0
-    
-    
-    def unpack(self, file_name, destination):
-        return
-    
-    
-    def __init__(self):
-        return
-
 
 PLUGIN_TYPE_ARCHIVE="ArchivePlugin"
 PLUGIN_TYPE_GENERIC="Plugin"
 PLUGIN_TYPE_DATASET="DatasetPlugin"
+PLUGIN_TYPE_VALIDATION="ValidationPlugin"
 
 # Entry format: [0]=plugin object, [1]=plugin type.
 plugin_list=[]
@@ -153,7 +84,7 @@ class DatasetPlugin:
     def fetch(self, destination):
         basedir=ariadnetools.get_base_dir()
         for d in self.data_list:
-            os.system(basedir+"scripts/ariadne-fetch.sh "+d+" "+destination)
+            os.system(basedir+"/scripts/ariadne-fetch.sh "+d+" "+destination)
             return 1
 
 
@@ -181,4 +112,106 @@ class DatasetPlugin:
 
 
     def __init__(self, def_filename="", def_tokens=[]):
+        return
+
+
+class ArgException(Exception):
+    custom_message=""
+    
+
+    def __init__(self, msg=""):
+        self.custom_message=msg
+
+
+    def __str__(self):
+        return "Invalid arguments.\n"+self.custom_message
+
+
+class DependencyContainer:
+    dependency_name=""
+    arg_dict={}
+    
+
+    def __init__(self, depname, args):
+        self.arg_dict=args
+        self.dependency_name=depname
+
+
+class Plugin:
+    name=None
+    argnames=[]
+    
+    def run(self):
+        return
+
+    
+    def depends(self):
+        # Should return a list of DependencyContainers.
+        return []
+
+
+    def validate(self):
+        return 0
+
+    
+    def check_inputs(self):
+        return
+
+
+    def benchmark(self):
+        return 0
+
+
+    def success(self):
+        return 1
+
+    
+    def __init__(self, args={}, conffile="", conftoks=[]):
+        return
+
+
+class ArchivePlugin:
+    name=None
+    
+    
+    def can_handle(self, extension):
+        return 0
+    
+    
+    def unpack(self, file_name, destination):
+        return
+    
+    
+    def __init__(self):
+        return
+
+
+class ValidationPlugin:
+    # This plugin type should make it easier for other 
+    # plugins to validate themselves and their output.
+    # It is ultimately a very flexible plugin class, 
+    # and it is expected that each validation plugin be
+    # requested by name or very specific handler type.
+    name=None
+    
+    
+    def get_handler(self, extension):
+        # Should return a method that can handle the extension requested.
+        # That method's arguments and return value are implementation-dependent.
+        return None
+    
+    
+    def can_handle(self, extension):
+        # Should return whether or not this plugin can handle the 
+        # handler type specified.
+        return 0
+    
+
+    def get_actions_handled(self):
+        # Should return the list of extensions or handler types
+        # that this plugin can handle.
+        return []
+
+
+    def __init(self):
         return

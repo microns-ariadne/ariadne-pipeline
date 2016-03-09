@@ -2,6 +2,58 @@
 
 NOTE: ariadne-pipeline is still under development and testing. Overall behavior is mostly stable, but internal APIs and plugin specifications are subject to change.
 
+## The CLI
+ariadne's core functions can be interacted with through ariadne.py:
+
+Usage: ariadne.py <command> [args]
+Manage, test, benchmark, and run software pipelines.
+
+Where <command> is one of the following:
+	dataset  	Manage, fetch, validate, and unpack datasets.
+	test     	Run tests on a pipeline.
+	benchmark	Benchmark a pipeline.
+	pipeline 	Run and manage pipelines.
+	plugins  	List all available plugins.
+
+### ariadne dataset
+This tool is used to fetch and prepare datasets for projects.
+It is invoked in the following form:
+`ariadne.py dataset <command> [dataset name]`
+Where command may be one of the following:
+
+* fetch -- Fetches the dataset named by [dataset name]
+* list -- Prints all datasets defined in the current working directory.
+* show -- Parses the dataset specified by [dataset name] and prints its contents.
+
+### ariadne test
+This runs a pipeline and (To be implemented. Currently, it just validates the top stage.) validates each stage in addition to printing out potentially useful debugging information.
+
+It is invoked in the following form:
+`ariadne.py test <pipeline name> <test definition file>`
+
+Currently, test definition files are plain text files containing lists of arguments to pass to the pipeline. They are formatted as follows:
+
+`testname1 arg1=value arg2=value`
+
+Each line in the file should contain one test.
+
+NOTE: This portion of ariadne is very likely to be restructured and changed to fit better models of validation.
+
+### ariadne benchmark
+This runs a benchmark for the specified pipeline. Currently, benchmarks are only based on the time taken to complete a task. It is up to each plugin to report or print other benchmark results.
+
+*NOTE:* Ariadne's benchmarking code currently only calls the benchmarking method on the top pipeline stage. This will be corrected in future releases
+
+It is invoked in the following form:
+
+`ariadne.py benchmark <pipeline name> [pipeline arguments]`
+
+Where [pipeline arguments] contains whitespace-separated list of values in the form:
+`arg=val`
+
+### ariadne pipeline
+### ariadne plugins
+
 ## Plugin API
 
 Ariadne is ultimately a coordinator for a large number of plugins. As such, it is often necessary to develop new plugins to design different pipelines or just to fit different needs. 

@@ -1,0 +1,7 @@
+name:
+    tensorflow-neuroproof-AC3
+topplugin:
+    tensorflow_neuroproof_AC3_top
+environment:
+    ROOT=/home/mgohde/coxlab/tensorflow-neuroproof-AC3
+    RESNET_COUNT=25

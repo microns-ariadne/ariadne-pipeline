@@ -59,13 +59,31 @@ def get_base_dir():
             d+='/'
         return d
     except:
-        print("WARNING: ARIADNE_BASE undefined.")
-        return "./"
+        # This may be significantly better than using the environment variable.
+        genpath=os.path.realpath(sys.path[0]+"/..")
+        return genpath
 
 
-def init_plugins():
-    filename=get_base_dir()+"plugins/plugins.list"
+def init_plugins(bdir=""):
+    filename=""
+    if bdir=="":
+        filename=get_base_dir()+"/plugins/plugins.list"
+    else:
+        filename=bdir+"/plugins.list"
+
     if file_exists(filename):
-        ariadneplugin.load_plugins(filename, get_base_dir()+"plugins")
+        ariadneplugin.load_plugins(filename, get_base_dir()+"/plugins")
     else:
         print("WARNING: No plugins defined at "+filename)
+
+
+def getenv(var_name):
+    try:
+        print(os.environ[var_name])
+        return os.environ[var_name]
+    except:
+        return ""
+
+
+def setenv(var_name, value):
+    os.environ[var_name]=value

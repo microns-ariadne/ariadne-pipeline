@@ -10,7 +10,6 @@ import deftools
 # ariadne.py -- command line interface for ariadne.
 
 
-
 def print_usage():
     print("Usage: ariadne.py <command> [args]")
     print("Manage, test, benchmark, and run software pipelines.")
@@ -28,8 +27,8 @@ def print_dataset_usage():
     print("\tfetch\tFetch, unpack, and validate a dataset.")
     print("\tlist \tShow all known dataset definitions.")
     print("\tshow \tShow information about a datset.")
-    
-    
+
+
 def print_pipeline_usage():
     print("Usage: ariadne.py pipeline <action> <pipelinename> [pipeline args]")
     print("\nWhere <action> is one of the following:")
@@ -51,30 +50,30 @@ def run_dataset(args):
     if len(args) == 0:
         print_dataset_usage()
         exit(1)
-    
-    action=args[0]
-    dataset_name=""
-    if len(args)>1:
-        dataset_name=args[1]
 
-    dataset_destination=""
-    if len(args)>2:
-        dataset_destination=args[2]
+    action = args[0]
+    dataset_name = ""
+    if len(args) > 1:
+        dataset_name = args[1]
 
-    dataset_filename=dataset_name+".dataset"
-    dataset_handlers=ariadneplugin.get_plugins(ariadneplugin.PLUGIN_TYPE_DATASET)
-    
+    dataset_destination = ""
+    if len(args) > 2:
+        dataset_destination = args[2]
+
+    dataset_filename = dataset_name + ".dataset"
+    dataset_handlers = ariadneplugin.get_plugins(ariadneplugin.PLUGIN_TYPE_DATASET)
+
     if action == "fetch":
         if not ariadnetools.file_exists(dataset_filename):
             print("ERROR: Dataset "+dataset_name+" does not exist.")
             return
-        dataset_contents=deftools.parse_file(dataset_filename)
-        dataset_type=deftools.search(dataset_contents, "type")[0]
-        if len(dataset_type)==0:
+        dataset_contents = deftools.parse_file(dataset_filename)
+        dataset_type = deftools.search(dataset_contents, "type")[0]
+        if len(dataset_type) == 0:
             print("ERROR: Dataset has unspecified type. Cannot handle.")
             exit(2)
         for hclass in dataset_handlers:
-            h=hclass[0]()
+            h = hclass[0]()
             if h.can_handle(dataset_type):
                 h=hclass[0](dataset_filename)
                 h.fetch(dataset_destination)
@@ -90,13 +89,13 @@ def run_dataset(args):
         dataset_contents=deftools.parse_file(dataset_filename)
         dataset_type=deftools.search(dataset_contents, "type")[0]
         handler=None
-        
+
         for hclass in dataset_handlers:
-            h=hclass[0]()
+            h = hclass[0]()
             if h.can_handle(dataset_type):
-                handler=h
+                handler = h
                 break
-        
+
         print("Dataset: "+dataset_name)
         print("Type: "+deftools.search(dataset_contents, "type")[0])
         if handler == None:
@@ -111,9 +110,26 @@ def run_dataset(args):
 
 def run_plugins(args):
     print("List of plugins:")
-    print("Name\tType")
+    o = sys.stdout
+    longest_len=0
     for p in ariadneplugin.plugin_list:
-        print(str(p[0].name)+"\t"+p[1])
+        if len(str(p[0].name)) > longest_len:
+            longest_len=len(str(p[0].name))
+
+    longest_len+=3
+
+    o.write("Name")
+    for i in range(0, longest_len-4, 1):
+        o.write(" ")
+    o.write("Type\n")
+
+    for p in ariadneplugin.plugin_list:
+        namedelta=longest_len-len(str(p[0].name))
+        namestr=str(p[0].name)
+        for i in range(0, namedelta, 1):
+            namestr+=' '
+        namestr+=p[1]+'\n'
+        o.write(namestr)
 
 
 def run_pipeline(args):
@@ -185,7 +201,7 @@ def run_benchmark(args):
 def main(argv):
     # These two are mostly for the benefit of plugins.
     sys.path.append(".")
-    sys.path.append(ariadnetools.get_base_dir()+"ariadne")
+    sys.path.append(ariadnetools.get_base_dir()+"/ariadne")
     ariadnetools.init_plugins()
 
     if len(argv) == 1:

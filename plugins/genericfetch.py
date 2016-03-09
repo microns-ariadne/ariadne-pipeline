@@ -17,7 +17,6 @@ class genericfetch(ariadneplugin.Plugin):
 
     def run(self):
         self.start_t=time.time()
-        print("ariadne.py dataset fetch %s %s" % (self.datasetname, self.dest))
         os.system("ariadne.py dataset fetch %s %s" % (self.datasetname, self.dest))
         self.stop_t=time.time()
 

@@ -139,6 +139,7 @@ class DependencyContainer:
 
 class Plugin:
     name=None
+    parallel=1
     argnames=[]
     debugging_args={}
     start_t=0

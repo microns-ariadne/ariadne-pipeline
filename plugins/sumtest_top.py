@@ -10,6 +10,7 @@ plugin_class = "sumtest_top"
 
 class sumtest_top(ariadneplugin.Plugin):
     name="sumtest_top"
+    parallel=0
     internalsum=0
     datasetname=""
     checkval=0
@@ -48,7 +49,7 @@ class sumtest_top(ariadneplugin.Plugin):
     def validate(self):
         try:
             f=h5py.File("./data/results.hdf5", "r")
-            retval=(f['result'][0] == self.internalsum) and (self.internalsum == self.checkval)
+            retval=(f['result'][0] == self.checkval and self.internalsum == self.checkval)
             f.close()
             return retval
         except:
@@ -63,6 +64,5 @@ class sumtest_top(ariadneplugin.Plugin):
     def __init__(self, args={}, conffile="", conftoks=[]):
         if args=={}:
             return
-
         self.checkval=float(args['checkval'])
         self.datasetname=args['datasetname']

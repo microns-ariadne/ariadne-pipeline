@@ -206,11 +206,6 @@ def run_benchmark(args):
     p.benchmark(argdict)
 
 
-def run_worker(args):
-    # TODO: Implement support for parallel processing through workers.
-    return
-
-
 def main(argv):
     # These two are mostly for the benefit of plugins.
     sys.path.append(".")
@@ -231,8 +226,6 @@ def main(argv):
         run_pipeline(argv[2:])
     elif argv[1] == "plugins":
         run_plugins(argv[2:])
-    elif argv[1] == "worker":
-        run_worker(argv[2:])
     for a in argv:
         toks = a.split()
 

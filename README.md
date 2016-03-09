@@ -72,7 +72,7 @@ Every module must have the following attributes:
 This interface must contain, at a minimum, the following:
 
 * `name` -- A string containing the plugin's name. This need not be the same as its class name.
-* `parallel` -- Whether the plugin can be run in parallel. Currently, parallel execution destroys the plugin's state when doing validation tasks, so this is best suited for operations that only do filesystem related tasks.
+* `parallel` -- Whether the plugin can be run in parallel. In future releases, it will be assumed that all tasks can be validated and benchmarked without internal state.
 
 All other methods exist to provide the plugin with flexibility and functionality.
 

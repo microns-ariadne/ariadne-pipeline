@@ -143,6 +143,8 @@ def run_pipeline(args):
     pipe_name=args[1]
     
     if action == "run":
+        print("Initializing executor process...")
+        pid=os.spawnlp(os.P_NOWAIT, "ariadne_worker.py", "ariadne_worker.py", "controller")
         pipe_args={}
         for a in args[2:]:
             toks=a.split('=')

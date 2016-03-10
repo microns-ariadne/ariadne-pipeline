@@ -15,6 +15,7 @@ class mkdir(ariadneplugin.Plugin):
 
 
     def run(self):
+        print("Makin' a dir: "+self.dirname)
         self.start=time.time()
         os.system("mkdir -p "+self.dirname)
         self.stop=time.time()

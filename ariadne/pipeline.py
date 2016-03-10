@@ -6,6 +6,8 @@ import os
 import sys
 import time
 from multiprocessing import Process, Value
+import workerinterface
+
 
 class Pipeline:
     topplugin=None
@@ -19,14 +21,14 @@ class Pipeline:
     dep_list=[]
 
 
-    def __build_dep_list(self, plugin, dlevel):
+    def __build_dep_list(self, plugin, dlevel, args):
         # This should allow for simple parallel processing to take place.
-        self.dep_list.append([dlevel, plugin])
-        for d in plugin.depends():
+        self.dep_list.append([dlevel, plugin, args])
+        p=plugin(args)
+        for d in p():
             depclass=ariadneplugin.search_plugins(d.dependency_name)
             if depclass != None:
-                dep=depclass(d.arg_dict)
-                self.__build_dep_list(dep, dlevel+1)
+                self.__build_dep_list(depclass, dlevel+1, d.arg_dict)
             else:
                 print("ERROR: Unresolved dependency. Name: "+d.dependency_name)
                 exit(2)
@@ -50,49 +52,32 @@ class Pipeline:
         return dlist
 
 
-    def __plugin_execution_wrapper(self, plugin):
-        p=Process(target=plugin.run, args=())
-        p.start()
-        return p
+    def __plugin_execution_wrapper(self, plugin, args):
+        workerinterface.run_local(plugin.name, args)
 
 
-    def __runplugin(self, plugin, validation_mode, step_by_step, benchmark_mode):
+    def __plugin_join(self):
+        workerinterface.wait_local()
+
+
+    def __runplugin(self, plugin, args, validation_mode, step_by_step, benchmark_mode):
+        if validation_mode:
+            workerinterface.validate_local()
+        if benchmark_mode:
+            workerinterface.benchmark_local()
+
         print("Building dependency list...")
-        self.__build_dep_list(plugin, 0)
+        self.__build_dep_list(plugin, 0, args)
         print("Finding highest level dependency...")
         highest=self.__get_max_dlevel()
         for i in range(highest, -1, -1):
             print("Executing level: "+str(i))
             elist=self.__get_of_dlevel(i)
-            tpool=[]
             # Start with fork:
             for d in elist:
-                if d[1].parallel:
-                    tpool.append(self.__plugin_execution_wrapper(d[1]))
-                else:
-                    d[1].run()
+                self.__plugin_execution_wrapper(d[1], d[2])
             # Now join:
-            for t in tpool:
-                t.join()
-            # Serial validation and benchmarking:
-            for d in elist:
-                if benchmark_mode:
-                    d[1].print_benchmark()
-                if validation_mode:
-                    valresults=d[1].validate()
-                    if valresults:
-                        print("PASS:" + d[1].name)
-                    else:
-                        print("FAIL:" + d[1].name)
-                if step_by_step:
-                    print("Summary for stage: "+plugin.name)
-                    print("\tArguments: "+str(plugin.debugging_args))
-                    print("Press <Enter> to continue.")
-                    sys.stdin.read(1)
-                
-                if not d[1].success():
-                    print("ERROR: Could not successfully execute plugin: "+d[1].name)
-                    exit(2)
+            self.__plugin_join()
         return self.dep_list[0][1]
 
 
@@ -122,13 +107,15 @@ class Pipeline:
         
 
     def run(self, pipe_args, validation_mode=0, step_by_step=0, benchmark_mode=0):
+        workerinterface.init()
+        workerinterface.connect_local()
         self.__set_environment()
-        tpl = self.topplugin(pipe_args)
         start=time.time()
-        self.__runplugin(tpl, validation_mode, step_by_step, benchmark_mode)
+        self.__runplugin(self.topplugin, pipe_args, validation_mode, step_by_step, benchmark_mode)
         total=time.time()-start
         if benchmark_mode:
             print("Total time taken to execute the pipeline: "+str(total))
+        workerinterface.disconnect_local()
         return tpl
 
             

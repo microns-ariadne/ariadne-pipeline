@@ -5,10 +5,13 @@
 import os
 import sys
 import socket
+import time
 import multiprocessing
 import ariadnetools
 import ariadneplugin
 import pipeline
+import ariadne
+import threading
 
 
 def get_arg_dict(toks):
@@ -19,31 +22,82 @@ def get_arg_dict(toks):
     return ret_dict
 
 
-def run_client():
-    print("Hello, there.")
-    i=sys.stdin
-    o=sys.stdout
-    line=i.readline().strip()
-    while line != "":
-        print("Client line: "+line)
+class ClientExecutor(threading.Thread):
+    internal_plugin=None
+    benchmode=0
+    valmode=0
+
+
+    def run(self):
+        print("Running the thing.")
+        self.internal_plugin.run()
+        if self.valmode:
+            valresults=self.internal_plugin.validate()
+            if valresults:
+                print("PASS: "+internal_plugin.name)
+            else:
+                print("FAIL: "+internal_plugin.name)
+        if self.benchmode:
+            print("Executed in %f seconds." % self.internal_plugin.benchmark())
+
+
+    def __init__(self, plugin, benchmode, valmode):
+        self.internal_plugin=plugin
+        self.benchmode=benchmode
+        self.valmode=valmode
+        threading.Thread.__init__(self)
+
+
+def run_client(i, o):
+    line=i.readline()
+    cur_thread=None
+    validation_mode=0
+    benchmark_mode=0
+
+    while 1:
+        print("Got: "+line)
         line=line.strip()
         linetoks=line.split()
         cmd=linetoks[0]
-        if cmd=="loadfrom":
-            ariadnetools.init_plugins(cmd)
+        if cmd=="loadcfg":
+            ariadnetools.init_plugins(linetoks[1])
         elif cmd=="run":
             plugin_name=linetoks[1]
             argdict=get_arg_dict(linetoks[2:])
+            print("Running plugin: "+plugin_name)
+            print("With args:")
+            print(argdict)
             pl_class=ariadneplugin.search_plugins(plugin_name)
             pl=pl_class(argdict)
-            pl.run()
-        elif cmd=="exit":
-            print("Exiting...")
-            exit(0)
-        elif cmd=="status":
-            print("OK")
-        line=i.readline().strip()
             
+            if cur_thread!=None:
+                if cur_thread.is_alive():
+                    cur_thread.join()
+
+            cur_thread=ClientExecutor(pl)
+            cur_thread.start()
+            cur_thread.join()
+        elif cmd=="exit":
+            exit(0)
+        elif cmd=="valmode":
+            validation_mode=not validation_mode
+        elif cmd=="benchmode":
+            benchmark_mode=not benchmark_mode
+        elif cmd=="status":
+            try:
+                if cur_thread.is_alive():
+                    o.write("busy\n")
+                    print("busy")
+                else:
+                    o.write("ok\n")
+                    print("ok")
+            except:
+                o.write("ok\n")
+                print("ok")
+            o.flush()
+            
+        line=i.readline().strip()  
+    print("Dying for some reason...")
     return
 
 
@@ -51,6 +105,8 @@ def spawn_workers():
     interface_list=[]
     procnum=multiprocessing.cpu_count()
     curpid=0
+    i=None
+    o=None
     
     pipelist=[]
     
@@ -62,27 +118,73 @@ def spawn_workers():
         if curpid == 0:
             os.close(pin)
             os.close(pout)
-            os.dup2(cin, sys.stdin.fileno())
+            i=os.fdopen(cin, "r")
+            o=os.fdopen(cout, "w")
+            #os.dup2(cin, sys.stdin.fileno())
             #os.dup2(cout, sys.stdout.fileno())
             break
         
         else:
             os.close(cin)
             os.close(cout)
+            pin=os.fdopen(pin, "r")
+            pout=os.fdopen(pout, "w")
             pipelist.append((pin, pout))
             
     if curpid!=0:
         return pipelist
     else:
         try:
-            run_client()
+            run_client(i, o)
         except:
             exit(1)
         exit(0)
 
 
-def handle_query(query, pipeset):
-    return
+def handle_query(query, pipeset, curworker, sock):
+    print("Handling query.")
+    qtoks=query.strip().split()
+    i=pipeset[curworker][0]
+    o=pipeset[curworker][1]
+    o.write("status\n")
+    o.flush()
+    l=i.readline().strip()
+    time.sleep(0.1)
+
+    cmd=qtoks[0]
+    print(cmd)
+    print("query")
+    print(query)
+    print("status: "+l)
+    if cmd=="run":
+        if l=="busy":
+            return 0
+        o.write(query+"\n")
+        o.flush()
+    elif cmd=="loadcfg": # Issue to all workers:
+        for p in pipeset:
+            p[1].write(query+"\n")
+            p[1].flush()
+    elif cmd=="shutdown":
+        sock.close()
+        raise Exception
+    elif cmd=="wait":
+        checkv=0
+        while not checkv:
+            checkv=1
+            for p in pipeset:
+                p[1].write("status\n")
+                p[1].flush()
+                l=p[0].readline().strip()
+                checkv=checkv and l=="ok"
+        sock.send("OK\n") #For synchronization.
+    elif cmd=="benchmode" or cmd=="valmode":
+        for p in pipeset:
+            p[1].write(cmd+"\n")
+            p[1].flush()
+
+    sock.close()
+    return 1
 
 
 def run_controller():
@@ -91,7 +193,7 @@ def run_controller():
     curworker=0
     
     ssock=socket.socket()
-    ssock.bind(('127.0.0.1', 9000))
+    ssock.bind(('127.0.0.1', 42424))
     
     try:
         ssock.listen(1)
@@ -101,20 +203,24 @@ def run_controller():
             conn.send("CMD?\n")
             query=conn.recv(1024)
             query=query.strip()
-            conn.close()
             print(query)
-            handle_query(query, pipelist[curworker])
-            curworker+=1
-            if curworker>(len(pipelist)-1):
-                curworker=0
-    except KeyboardInterrupt:
-        print("Got keyboard interrupt. Exiting...")
-    ssock.close()
-    print("Shutting down workers...")
-    for p in pipelist:
-        os.write(p[1], "exit\n")
-        os.close(p[1])
-        os.close(p[0])
+            
+            while not handle_query(query, pipelist, curworker, conn):
+                print("Moving to next worker...")
+                curworker+=1
+                if curworker>(len(pipelist)-1):
+                    curworker=0
+
+    except:
+        print("Got exception. Exiting...")
+        ssock.shutdown(socket.SHUT_RDWR)
+        ssock.close()
+        print("Shutting down workers...")
+        for p in pipelist:
+            p[1].write("exit\n")
+            p[1].flush()
+            p[1].close()
+            p[0].close()
         
 
 def main(args):

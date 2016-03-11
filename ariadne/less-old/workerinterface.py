@@ -6,7 +6,7 @@ import socket
 import threading
 import ariadnetools
 
-class worker_instance:
+class WorkerInstance:
     pid=0
     hostname=""
     port=0
@@ -165,7 +165,7 @@ def test_local_running():
 def connect_local():
     global local_worker_instance
     if local_worker_instance==None:
-        local_worker_instance=worker_instance()
+        local_worker_instance=WorkerInstance()
         if test_local_running():
             local_worker_instance.pid=0
         else:

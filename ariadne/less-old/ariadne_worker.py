@@ -26,6 +26,7 @@ class ClientExecutor(threading.Thread):
     internal_plugin=None
     benchmode=0
     valmode=0
+    cur_status="NA"
 
 
     def run(self):
@@ -38,6 +39,10 @@ class ClientExecutor(threading.Thread):
                 print("FAIL: "+internal_plugin.name)
         if self.benchmode:
             print("Executed in %f seconds." % self.internal_plugin.benchmark())
+        if self.internal_plugin.success():
+            self.cur_status="PASS"
+        else:
+            self.cur_status="FAIL"
 
 
     def __init__(self, plugin, benchmode, valmode):
@@ -52,6 +57,7 @@ def run_client(i, o):
     cur_thread=None
     validation_mode=0
     benchmark_mode=0
+
 
     try:
         while 1:
@@ -88,6 +94,8 @@ def run_client(i, o):
                     if cur_thread.is_alive():
                         o.write("busy\n")
                         print("busy")
+                    elif cur_thread.cur_status!="NA":
+                        o.write(cur_thread.cur_status)
                     else:
                         o.write("ok\n")
                         print("ok")
@@ -197,6 +205,7 @@ def handle_query(query, pipeset, curworker, sock):
 
 def run_controller():
     # Runs a very simple server service that is attached to a process pool.
+    joblist=[]
     pipelist=spawn_workers()
     curworker=0
     

@@ -9,6 +9,7 @@ PLUGIN_TYPE_ARCHIVE="ArchivePlugin"
 PLUGIN_TYPE_GENERIC="Plugin"
 PLUGIN_TYPE_DATASET="DatasetPlugin"
 PLUGIN_TYPE_VALIDATION="ValidationPlugin"
+PLUGIN_TYPE_EXECUTOR="ExecutorPlugin"
 
 # Entry format: [0]=plugin object, [1]=plugin type.
 plugin_list=[]
@@ -224,4 +225,40 @@ class ValidationPlugin:
 
 
     def __init(self):
+        return
+
+
+class ExecutionWrapper:
+    """Container for execution details.
+    Should allow for flexible and forwards-compatible specification of plugin execution
+    details.
+    """
+    plugin_name=""
+    plugin_args={}
+    plugin_machine=""
+    plugin_port=0
+
+    def __init__(self, name, args, plugin_machine="", plugin_port=0):
+        self.plugin_name=name
+        self.plugin_args=args
+        self.plugin_machine=plugin_machine
+        self.plugin_port=plugin_port
+
+
+class ExecutorPlugin:
+    """A plugin designed to execute lists of other plugins."""
+    name=None
+
+
+    def can_handle(self, extension):
+        return 0
+
+
+    def run(self, exec_list, do_validation, do_benchmarking):
+        """Runs plugins from a list of ExecutionWrappers. Returns execution success and time."""
+        return 0, 0
+
+
+    def setenv(self, env_list):
+        """Allows pipelines to specify their own environments."""
         return

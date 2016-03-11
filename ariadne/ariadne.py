@@ -132,7 +132,7 @@ def run_plugins():
         o.write(namestr)
 
 
-def run_pipeline(action, pipe_name, args)
+def run_pipeline(action, pipe_name, args):
     if action == "run":
         pipe_args=build_arg_dict(args)
         p=pipeline.Pipeline(pipe_name+".pipeline")
@@ -169,7 +169,7 @@ def run_test(pipe_name, test_filename):
     p.validate(arglist, step)
 
 
-def run_benchmark(pipe_name, args)
+def run_benchmark(pipe_name, args):
     if pipe_name=="":
         print_benchmark_usage()
         return
@@ -207,7 +207,7 @@ def main(argv):
             results.moreargs.append(results.optarg2)
         run_benchmark(results.optarg1, results.moreargs)
     elif argv[1] == "pipeline":
-        run_pipeline(results.optarg1, results.optarg2, results.parse_args)
+        run_pipeline(results.optarg1, results.optarg2, results.moreargs)
     elif argv[1] == "plugins":
         run_plugins()
 

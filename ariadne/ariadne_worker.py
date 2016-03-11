@@ -29,7 +29,6 @@ class ClientExecutor(threading.Thread):
 
 
     def run(self):
-        print("Running the thing.")
         self.internal_plugin.run()
         if self.valmode:
             valresults=self.internal_plugin.validate()
@@ -54,50 +53,52 @@ def run_client(i, o):
     validation_mode=0
     benchmark_mode=0
 
-    while 1:
-        print("Got: "+line)
-        line=line.strip()
-        linetoks=line.split()
-        cmd=linetoks[0]
-        if cmd=="loadcfg":
-            ariadnetools.init_plugins(linetoks[1])
-        elif cmd=="run":
-            plugin_name=linetoks[1]
-            argdict=get_arg_dict(linetoks[2:])
-            print("Running plugin: "+plugin_name)
-            print("With args:")
-            print(argdict)
-            pl_class=ariadneplugin.search_plugins(plugin_name)
-            pl=pl_class(argdict)
-            
-            if cur_thread!=None:
-                if cur_thread.is_alive():
-                    cur_thread.join()
-
-            cur_thread=ClientExecutor(pl)
-            cur_thread.start()
-            cur_thread.join()
-        elif cmd=="exit":
-            exit(0)
-        elif cmd=="valmode":
-            validation_mode=not validation_mode
-        elif cmd=="benchmode":
-            benchmark_mode=not benchmark_mode
-        elif cmd=="status":
-            try:
-                if cur_thread.is_alive():
-                    o.write("busy\n")
-                    print("busy")
+    try:
+        while 1:
+            print("Got: "+line)
+            line=line.strip()
+            linetoks=line.split()
+            cmd=linetoks[0]
+            if cmd=="loadcfg":
+                ariadnetools.init_plugins(linetoks[1])
+            elif cmd=="run":
+                plugin_name=linetoks[1]
+                argdict=get_arg_dict(linetoks[2:])
+                print("Running plugin: "+plugin_name)
+                pl_class=ariadneplugin.search_plugins(plugin_name)
+                if pl_class==None:
+                    print("ERROR: Could not find plugin.")
                 else:
+                    pl=pl_class(argdict)
+                    
+                    if cur_thread!=None:
+                        if cur_thread.is_alive():
+                            cur_thread.join()
+
+                    cur_thread=ClientExecutor(pl, benchmark_mode, validation_mode)
+                    cur_thread.start()
+            elif cmd=="exit":
+                exit(0)
+            elif cmd=="valmode":
+                validation_mode=not validation_mode
+            elif cmd=="benchmode":
+                benchmark_mode=not benchmark_mode
+            elif cmd=="status":
+                try:
+                    if cur_thread.is_alive():
+                        o.write("busy\n")
+                        print("busy")
+                    else:
+                        o.write("ok\n")
+                        print("ok")
+                except:
                     o.write("ok\n")
                     print("ok")
-            except:
-                o.write("ok\n")
-                print("ok")
-            o.flush()
-            
-        line=i.readline().strip()  
-    print("Dying for some reason...")
+                o.flush()
+                
+            line=i.readline().strip()  
+    except:
+        print("Worker exiting...")
     return
 
 
@@ -156,6 +157,9 @@ def handle_query(query, pipeset, curworker, sock):
     print("query")
     print(query)
     print("status: "+l)
+    if query==None:
+        return 1
+
     if cmd=="run":
         if l=="busy":
             return 0
@@ -168,6 +172,8 @@ def handle_query(query, pipeset, curworker, sock):
     elif cmd=="shutdown":
         sock.close()
         raise Exception
+    elif cmd=="nop":
+        print("Got alive-ness check from sender.")
     elif cmd=="wait":
         checkv=0
         while not checkv:
@@ -182,6 +188,8 @@ def handle_query(query, pipeset, curworker, sock):
         for p in pipeset:
             p[1].write(cmd+"\n")
             p[1].flush()
+    else:
+        print("Invalid command: "+query)
 
     sock.close()
     return 1
@@ -196,22 +204,23 @@ def run_controller():
     ssock.bind(('127.0.0.1', 42424))
     
     try:
-        ssock.listen(1)
+        ssock.listen(4)
         while 1:
             print("Accepting connection...")
             conn, addr=ssock.accept()
-            conn.send("CMD?\n")
-            query=conn.recv(1024)
-            query=query.strip()
-            print(query)
+            try:
+                query=conn.recv(1024)
+                query=query.strip()
+                print(query)
             
-            while not handle_query(query, pipelist, curworker, conn):
-                print("Moving to next worker...")
-                curworker+=1
-                if curworker>(len(pipelist)-1):
-                    curworker=0
-
-    except:
+                while not handle_query(query, pipelist, curworker, conn):
+                    print("Moving to next worker...")
+                    curworker+=1
+                    if curworker>(len(pipelist)-1):
+                        curworker=0
+            except socket.error:
+                print("ERROR: Could not read socket data.")
+    except Exception:
         print("Got exception. Exiting...")
         ssock.shutdown(socket.SHUT_RDWR)
         ssock.close()

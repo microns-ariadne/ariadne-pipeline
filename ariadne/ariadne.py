@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# This is a temporary version of ariadne as I change argument handling
+
+#!/usr/bin/env python
 
 import sys
 import os
@@ -6,6 +9,7 @@ import ariadneplugin
 import ariadnetools
 import pipeline
 import deftools
+import argparse
 
 # ariadne.py -- command line interface for ariadne.
 
@@ -38,8 +42,6 @@ def print_pipeline_usage():
 
 def print_test_usage():
     print("Usage: ariadne.py test <pipelinename> <test definition file> [args]")
-    print("\nWhere [args] may be one or more of the following:")
-    print("\t-step\tWalks through the pipeline stage by stage.")
 
 
 def print_benchmark_usage():
@@ -48,23 +50,19 @@ def print_benchmark_usage():
     print("\tto the pipeline.")
 
 
-def run_dataset(args):
-    if len(args) == 0:
+def build_arg_dict(arg_list):
+    d={}
+    for a in arg_list:
+        toks=a.split('=')
+        d[toks[0]]=toks[1]
+    return d
+
+
+def run_dataset(action, dataset_name):
+    if action=="" and dataset_name=="":
         print_dataset_usage()
-        exit(1)
-
-    action = args[0]
-    dataset_name = ""
-    if len(args) > 1:
-        dataset_name = args[1]
-
-    dataset_destination = ""
-    if len(args) > 2:
-        dataset_destination = args[2]
-
-    dataset_filename = dataset_name + ".dataset"
-    dataset_handlers = ariadneplugin.get_plugins(ariadneplugin.PLUGIN_TYPE_DATASET)
-
+        return
+    
     if action == "fetch":
         if not ariadnetools.file_exists(dataset_filename):
             print("ERROR: Dataset "+dataset_name+" does not exist.")
@@ -110,7 +108,7 @@ def run_dataset(args):
         exit(0)
 
 
-def run_plugins(args):
+def run_plugins():
     print("List of plugins:")
     o = sys.stdout
     longest_len=0
@@ -134,21 +132,9 @@ def run_plugins(args):
         o.write(namestr)
 
 
-def run_pipeline(args):
-    if len(args)<2:
-        print_pipeline_usage()
-        return
-    
-    action=args[0]
-    pipe_name=args[1]
-    
+def run_pipeline(action, pipe_name, args)
     if action == "run":
-        print("Initializing executor process...")
-        pid=os.spawnlp(os.P_NOWAIT, "ariadne_worker.py", "ariadne_worker.py", "controller")
-        pipe_args={}
-        for a in args[2:]:
-            toks=a.split('=')
-            pipe_args[toks[0].strip('-')]=toks[1]
+        pipe_args=build_arg_dict(args)
         p=pipeline.Pipeline(pipe_name+".pipeline")
         p.run(pipe_args)
 
@@ -157,19 +143,10 @@ def run_pipeline(args):
         p.check_dependencies()
 
 
-def run_test(args):
-    step=0
-
-    if len(args) < 2:
+def run_test(pipe_name, test_filename):
+    if pipe_name=="" or test_filename=="":
         print_test_usage()
         return
-    elif len(args) > 2:
-        for a in args[2:]:
-            if a == "-step":
-                step=1
-
-    pipe_name=args[0]
-    test_filename=args[1]
     
     f=open(test_filename, 'r')
     contents=f.read()
@@ -192,17 +169,12 @@ def run_test(args):
     p.validate(arglist, step)
 
 
-def run_benchmark(args):
-    if len(args)==0:
+def run_benchmark(pipe_name, args)
+    if pipe_name=="":
         print_benchmark_usage()
         return
-
     pipe_name=args[0]
-    argdict={}
-
-    for a in args[1:]:
-        toks=a.split('=')
-        argdict[toks[0]]=toks[1]
+    argdict=build_arg_dict(args)
     
     p=pipeline.Pipeline(pipe_name+".pipeline")
     p.benchmark(argdict)
@@ -217,19 +189,27 @@ def main(argv):
     if len(argv) == 1:
         print_usage()
         exit()
+        
+    parser=argparse.ArgumentParser(description="Manage, test, and benchmark software pipelines.")
+    parser.add_argument("cmd", help=argparse.SUPPRESS)
+    parser.add_argument("optarg1", nargs="?")
+    parser.add_argument("optarg2", nargs="?")
+    parser.add_argument("moreargs", nargs="*")
+
+    results=parser.parse_args()
 
     if argv[1] == "dataset":
-        run_dataset(argv[2:])
+        run_dataset(results.optarg1, results.optarg2)
     elif argv[1] == "test":
-        run_test(argv[2:])
+        run_test(results.optarg1, results.optarg2)
     elif argv[1] == "benchmark":
-        run_benchmark(argv[2:])
+        if results.optarg2!="":
+            results.moreargs.append(results.optarg2)
+        run_benchmark(results.optarg1, results.moreargs)
     elif argv[1] == "pipeline":
-        run_pipeline(argv[2:])
+        run_pipeline(results.optarg1, results.optarg2, results.parse_args)
     elif argv[1] == "plugins":
-        run_plugins(argv[2:])
-    for a in argv:
-        toks = a.split()
+        run_plugins()
 
 if __name__ == "__main__":
     main(sys.argv)

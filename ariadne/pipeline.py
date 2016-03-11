@@ -25,7 +25,7 @@ class Pipeline:
         # This should allow for simple parallel processing to take place.
         self.dep_list.append([dlevel, plugin, args])
         p=plugin(args)
-        for d in p():
+        for d in p.depends():
             depclass=ariadneplugin.search_plugins(d.dependency_name)
             if depclass != None:
                 self.__build_dep_list(depclass, dlevel+1, d.arg_dict)
@@ -54,6 +54,7 @@ class Pipeline:
 
     def __plugin_execution_wrapper(self, plugin, args):
         workerinterface.run_local(plugin.name, args)
+        time.sleep(1)
 
 
     def __plugin_join(self):
@@ -78,7 +79,7 @@ class Pipeline:
                 self.__plugin_execution_wrapper(d[1], d[2])
             # Now join:
             self.__plugin_join()
-        return self.dep_list[0][1]
+        return self.dep_list[0][1](self.dep_list[0][2])
 
 
     def __set_environment(self):
@@ -107,11 +108,10 @@ class Pipeline:
         
 
     def run(self, pipe_args, validation_mode=0, step_by_step=0, benchmark_mode=0):
-        workerinterface.init()
         workerinterface.connect_local()
         self.__set_environment()
         start=time.time()
-        self.__runplugin(self.topplugin, pipe_args, validation_mode, step_by_step, benchmark_mode)
+        tpl=self.__runplugin(self.topplugin, pipe_args, validation_mode, step_by_step, benchmark_mode)
         total=time.time()-start
         if benchmark_mode:
             print("Total time taken to execute the pipeline: "+str(total))

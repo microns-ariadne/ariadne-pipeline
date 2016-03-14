@@ -28,3 +28,12 @@ def search(tokens, section):
         if t[0] == section:
             return t[1:]
     return []
+
+
+def make_dict(tokens):
+    tokdict={}
+    
+    for t in tokens:
+        tokdict[t[0]]=t[1:]
+    
+    return tokdict

@@ -2,7 +2,7 @@
 import os
 import sys
 
-import ariadneplugin
+import plugin
 
 
 def get_extension(name):
@@ -72,7 +72,7 @@ def init_plugins(bdir=""):
         filename=bdir+"/plugins.list"
 
     if file_exists(filename):
-        ariadneplugin.load_plugins(filename, get_base_dir()+"/plugins")
+        plugin.load_plugins(filename, get_base_dir()+"/plugins")
     else:
         print("WARNING: No plugins defined at "+filename)
 

@@ -2,7 +2,7 @@
 # ariadne.
 import os
 import sys
-import ariadnetools
+import tools
 import nose
 
 
@@ -67,9 +67,6 @@ def get_can_handle(ext):
             if pl.can_handle(ext):
                 return p[0]
     return None
-
-
-
 
 
 class ArgException(Exception):
@@ -201,6 +198,18 @@ class AriadneOp:
         return 0
 
 
+    def files_modified(self):
+        return []
+
+
+    def get_arg_names(self):
+        return []
+
+
+    def depends(self):
+        return []
+
+
     def test(self):
         return nose.run()
 
@@ -214,9 +223,6 @@ class AriadneMLOp(AriadneOp):
     
     def benchmark(self):
         return
-
-    def depends(self):
-        return []
 
 
 class AriadneTrainOp(AriadneMLOp):

@@ -1,11 +1,11 @@
-import plugin
+import ariadneplugin
 import deftools
 import os
 
 plugin_class="rawdataset"
 
 
-class rawdataset(plugin.DatasetPlugin):
+class rawdataset(ariadneplugin.DatasetPlugin):
     name = "rawdataset"
     data_list = []
 

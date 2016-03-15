@@ -1,5 +1,7 @@
 name:
 	testhdf5
+description:
+	A test HDF5 dataset.
 type:
 	dataset/hdf5
 urls:

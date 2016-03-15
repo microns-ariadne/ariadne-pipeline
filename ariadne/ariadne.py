@@ -83,7 +83,18 @@ def run_dataset(action, dataset_name):
         dirlisting=os.listdir('.')
         for entry in dirlisting:
             if tools.get_extension(entry) == ".dataset":
-                print(entry.split('.')[0])
+                dataset_contents=deftools.parse_file(entry)
+                ds_name=""
+                ds_descrip=""
+                try:
+                    ds_name=deftools.search(dataset_contents, "name")[0]
+                except:
+                    ds_name="None"
+                try:
+                    ds_descrip=deftools.search(dataset_contents, "description")[0]
+                except:
+                    ds_descrip="No description found."
+                print("%s: %s" % (ds_name, ds_descrip))
 
     elif action == "show":
         dataset_contents=deftools.parse_file(dataset_filename)
@@ -180,14 +191,18 @@ def run_benchmark(pipe_name, args):
     p.benchmark(argdict)
 
 
-def run_plugin(plugin_name, plugin_args):
+def run_plugin(plugin_name, plugin_dir, plugin_args):
     if plugin_name=="":
         print_run_plugin_usage()
         return
-    pclass=plugin.search(plugin_name)
+    tools.init_plugins(plugin_dir)
+    pclass=plugin.search_plugins(plugin_name)
+    if pclass==None:
+        print("ERROR: Plugin %s could not be found!" % plugin_name)
+        return
     argdict=build_arg_dict(plugin_args)
-    pl=pclass(argdict)
-    pl.run()
+    pl=pclass()
+    pl.run(argdict)
 
 
 def main(argv):
@@ -221,9 +236,7 @@ def main(argv):
     elif cmd == "plugins":
         run_plugins()
     elif cmd == "runplugin":
-        if results.optarg2!="":
-            results.moreargs.append(results.optarg2)
-        run_plugin(results.optarg1, results.moreargs)
+        run_plugin(results.optarg1, results.optarg2, results.moreargs)
 
 if __name__ == "__main__":
     main(sys.argv)

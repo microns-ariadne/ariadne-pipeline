@@ -69,6 +69,7 @@ def init_plugins(bdir=""):
     if bdir=="":
         filename=get_base_dir()+"/plugins/plugins.list"
     else:
+        sys.path.append(bdir)
         filename=bdir+"/plugins.list"
 
     if file_exists(filename):

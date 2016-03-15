@@ -66,7 +66,7 @@ def get_can_handle(ext):
             pl=p[0]()
             if pl.can_handle(ext):
                 return p[0]
-    return None
+    return []
 
 
 class ArgException(Exception):

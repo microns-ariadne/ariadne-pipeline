@@ -64,6 +64,10 @@ def get_base_dir():
         return genpath
 
 
+def get_default_dataset_dir():
+    return get_base_dir()+"/examples"
+
+
 def init_plugins(bdir=""):
     filename=""
     if bdir=="":

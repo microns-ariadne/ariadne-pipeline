@@ -1,5 +1,5 @@
 name:
-	testhdf5
+	ac3-test
 type:
 	dataset/hdf5
 urls:

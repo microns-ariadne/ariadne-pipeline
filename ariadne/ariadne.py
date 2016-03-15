@@ -58,14 +58,38 @@ def build_arg_dict(arg_list):
     return d
 
 
+def list_datasets(path):
+    dirlisting=os.listdir(path)
+    for entry in dirlisting:
+        if tools.get_extension(entry)==".dataset":
+            dataset_contents=deftools.parse_file(path+"/"+entry)
+            ds_name=""
+            ds_descrip=""
+            try:
+                ds_name=deftools.search(dataset_contents, "name")[0]
+            except:
+                ds_name="None"
+            try:
+                ds_descrip=deftools.search(dataset_contents, "description")[0]
+            except:
+                ds_descrip="No description found."
+            print("%s: %s" % (ds_name, ds_descrip))
+            
+
 def run_dataset(action, dataset_name):
     if action=="" and dataset_name=="":
         print_dataset_usage()
         return
-    
-    if action == "fetch":
-        if not tools.file_exists(dataset_filename):
-            print("ERROR: Dataset "+dataset_name+" does not exist.")
+
+    # Determine where, exactly, this dataset is:
+    fullpath="%s/%s.dataset" % (tools.get_default_dataset_dir(), dataset_name)
+    if not tools.file_exists(fullpath):
+        fullpath="./%s.dataset" % dataset_name
+
+    if action=="fetch":
+        if not tools.file_exists(fullpath):
+            print("ERROR: Dataset "+dataset_name+" does not exist either in ./ or %s." 
+                    % tools.get_default_dataset_dir())
             return
         dataset_contents = deftools.parse_file(dataset_filename)
         dataset_type = deftools.search(dataset_contents, "type")[0]
@@ -80,26 +104,17 @@ def run_dataset(action, dataset_name):
                 h.unpack(dataset_destination)
 
     elif action == "list":
-        dirlisting=os.listdir('.')
-        for entry in dirlisting:
-            if tools.get_extension(entry) == ".dataset":
-                dataset_contents=deftools.parse_file(entry)
-                ds_name=""
-                ds_descrip=""
-                try:
-                    ds_name=deftools.search(dataset_contents, "name")[0]
-                except:
-                    ds_name="None"
-                try:
-                    ds_descrip=deftools.search(dataset_contents, "description")[0]
-                except:
-                    ds_descrip="No description found."
-                print("%s: %s" % (ds_name, ds_descrip))
+        list_datasets(tools.get_default_dataset_dir())
+        list_datasets(".")
 
     elif action == "show":
-        dataset_contents=deftools.parse_file(dataset_filename)
+        if not tools.file_exists(fullpath):
+            print("ERROR: Dataset %s does not exist." % dataset_name)
+            return
+        dataset_contents=deftools.parse_file(fullpath)
         dataset_type=deftools.search(dataset_contents, "type")[0]
         handler=None
+        dataset_handlers=plugin.get_can_handle(dataset_type)
 
         for hclass in dataset_handlers:
             h = hclass[0]()

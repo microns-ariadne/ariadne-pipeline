@@ -25,6 +25,17 @@ def genwrapper(f, name, line):
     f.write("        os.system('%s')\n" % line)
 
 
+def sanitize_evar(envv):
+    toks=envv.split('=')
+    pathappend=toks[1].split(':')
+    print(pathappend)
+    if len(pathappend)>1:
+        print("yarr"+toks[0]+'='+pathappend[1])
+        return toks[0]+'='+pathappend[1]
+    else:
+        return envv
+
+
 def writepdef(f, plist, elist, dname):
     f.write("stages:\n")
     for p in plist:
@@ -32,7 +43,7 @@ def writepdef(f, plist, elist, dname):
 
     f.write("environment:\n")
     for e in elist:
-        f.write("\t%s\n" % e)
+        f.write("\t%s\n" % sanitize_evar(e))
 
     f.write("plugindir:\n")
     f.write("\t%s\n" % dname)

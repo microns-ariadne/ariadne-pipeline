@@ -15,6 +15,7 @@ class Pipeline:
     trainstagenames=[]
     datasets=[]
     env=[]
+    plugindir=""
 
 
     def __setenv(self):
@@ -32,12 +33,20 @@ class Pipeline:
             dep=depclass()
             # Go recursion!
             self.__gen_depends(f, dep)
-        plugingen.gen(plugin, f, plugin.name)
+        plugingen.gen(plugin, f, plugin.name, self.plugindir)
+
+
+    def __loadplugins(self):
+        if self.plugindir!="":
+            tools.init_plugins(self.plugindir)
+        else:
+           self.plugindir=tools.get_base_dir()+"/plugins"
 
 
     def run(self, arglist):
         self.__setenv()
-        for s in stagenames:
+        self.__loadplugins()
+        for s in self.stagenames:
             fname=s+"_l.py"
             f=open(fname, "w")
             pclass=plugin.search_plugins(s)
@@ -48,7 +57,7 @@ class Pipeline:
                 self.__gen_depends(f, pclass())
                 
             f.close()
-            runstr="python -m luigi --module %s %s --local-scheduler" % (s, s)
+            runstr="python -m luigi --module %s_l %s_l --local-scheduler" % (s, s)
             for a in arglist:
                 runstr+=" --%s %s" % (a[0], a[1])
             os.system(runstr)
@@ -64,9 +73,17 @@ class Pipeline:
         else:
             self.stagenames=td['stages']
         
-        if not len(td['training']):
-            print("WARNING: No training stages defined.")
-        else:
+        try:
             self.trainstagenames=td['training']
+        except:
+            print("Warning: no training stages defined.")
         
-        self.datasets=td['datasets']
+        try:
+            self.datasets=td['datasets']
+        except:
+            self.datasets=self.datasets
+
+        self.env=td['environment']
+
+        if len(td['plugindir']):
+            self.plugindir=td['plugindir'][0]

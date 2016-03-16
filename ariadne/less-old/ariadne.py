@@ -5,8 +5,8 @@
 
 import sys
 import os
-import plugin
-import tools
+import ariadneplugin
+import ariadnetools
 import pipeline
 import deftools
 import argparse
@@ -58,38 +58,14 @@ def build_arg_dict(arg_list):
     return d
 
 
-def list_datasets(path):
-    dirlisting=os.listdir(path)
-    for entry in dirlisting:
-        if tools.get_extension(entry)==".dataset":
-            dataset_contents=deftools.parse_file(path+"/"+entry)
-            ds_name=""
-            ds_descrip=""
-            try:
-                ds_name=deftools.search(dataset_contents, "name")[0]
-            except:
-                ds_name="None"
-            try:
-                ds_descrip=deftools.search(dataset_contents, "description")[0]
-            except:
-                ds_descrip="No description found."
-            print("%s: %s" % (ds_name, ds_descrip))
-            
-
 def run_dataset(action, dataset_name):
     if action=="" and dataset_name=="":
         print_dataset_usage()
         return
-
-    # Determine where, exactly, this dataset is:
-    fullpath="%s/%s.dataset" % (tools.get_default_dataset_dir(), dataset_name)
-    if not tools.file_exists(fullpath):
-        fullpath="./%s.dataset" % dataset_name
-
-    if action=="fetch":
-        if not tools.file_exists(fullpath):
-            print("ERROR: Dataset "+dataset_name+" does not exist either in ./ or %s." 
-                    % tools.get_default_dataset_dir())
+    
+    if action == "fetch":
+        if not ariadnetools.file_exists(dataset_filename):
+            print("ERROR: Dataset "+dataset_name+" does not exist.")
             return
         dataset_contents = deftools.parse_file(dataset_filename)
         dataset_type = deftools.search(dataset_contents, "type")[0]
@@ -104,17 +80,15 @@ def run_dataset(action, dataset_name):
                 h.unpack(dataset_destination)
 
     elif action == "list":
-        list_datasets(tools.get_default_dataset_dir())
-        list_datasets(".")
+        dirlisting=os.listdir('.')
+        for entry in dirlisting:
+            if ariadnetools.get_extension(entry) == ".dataset":
+                print(entry.split('.')[0])
 
     elif action == "show":
-        if not tools.file_exists(fullpath):
-            print("ERROR: Dataset %s does not exist." % dataset_name)
-            return
-        dataset_contents=deftools.parse_file(fullpath)
+        dataset_contents=deftools.parse_file(dataset_filename)
         dataset_type=deftools.search(dataset_contents, "type")[0]
         handler=None
-        dataset_handlers=plugin.get_can_handle(dataset_type)
 
         for hclass in dataset_handlers:
             h = hclass[0]()
@@ -138,7 +112,7 @@ def run_plugins():
     print("List of plugins:")
     o = sys.stdout
     longest_len=0
-    for p in plugin.plugin_list:
+    for p in ariadneplugin.plugin_list:
         if len(str(p[0].name)) > longest_len:
             longest_len=len(str(p[0].name))
 
@@ -149,7 +123,7 @@ def run_plugins():
         o.write(" ")
     o.write("Type\n")
 
-    for p in plugin.plugin_list:
+    for p in ariadneplugin.plugin_list:
         namedelta=longest_len-len(str(p[0].name))
         namestr=str(p[0].name)
         for i in range(0, namedelta, 1):
@@ -206,25 +180,21 @@ def run_benchmark(pipe_name, args):
     p.benchmark(argdict)
 
 
-def run_plugin(plugin_name, plugin_dir, plugin_args):
-    if plugin_name=="":
+def run_plugin(plugin_name, plugin_args):
+    if plugin_name="":
         print_run_plugin_usage()
         return
-    tools.init_plugins(plugin_dir)
-    pclass=plugin.search_plugins(plugin_name)
-    if pclass==None:
-        print("ERROR: Plugin %s could not be found!" % plugin_name)
-        return
+    pclass=ariadneplugin.search(plugin_name)
     argdict=build_arg_dict(plugin_args)
-    pl=pclass()
-    pl.run(argdict)
+    pl=pclass(argdict)
+    pl.run()
 
 
 def main(argv):
     # These two are mostly for the benefit of plugins.
     sys.path.append(".")
-    sys.path.append(tools.get_base_dir()+"/ariadne")
-    tools.init_plugins()
+    sys.path.append(ariadnetools.get_base_dir()+"/ariadne")
+    ariadnetools.init_plugins()
 
     if len(argv) == 1:
         print_usage()
@@ -251,7 +221,9 @@ def main(argv):
     elif cmd == "plugins":
         run_plugins()
     elif cmd == "runplugin":
-        run_plugin(results.optarg1, results.optarg2, results.moreargs)
+        if results.optarg2!="":
+            results.moreargs.append(results.optarg2)
+        run_plugin(results.optarg1, results.moreargs)
 
 if __name__ == "__main__":
     main(sys.argv)

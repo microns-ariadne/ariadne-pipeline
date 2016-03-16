@@ -5,6 +5,7 @@
 
 import ariadneplugin
 import os
+import time
 
 plugin_class = "genericfetch"
 
@@ -15,17 +16,10 @@ class genericfetch(ariadneplugin.Plugin):
 
 
     def run(self):
-        # Workaround for development:
-        prefix=""
-        try:
-            dirlisting=os.listdir(".")
-            dirlisting.index("ariadne.py")
-            prefix="./"
-        except ValueError:
-            prefix=prefix # Effectively do nothing.
-
-        print(prefix+"ariadne.py dataset fetch %s %s" % (self.datasetname, self.dest))
-        os.system(prefix+"ariadne.py dataset fetch %s %s" % (self.datasetname, self.dest))
+        print("Fetching dataset: "+self.datasetname)
+        self.start_t=time.time()
+        os.system("ariadne.py dataset fetch %s %s" % (self.datasetname, self.dest))
+        self.stop_t=time.time()
 
 
     def validate(self):
@@ -35,6 +29,5 @@ class genericfetch(ariadneplugin.Plugin):
     def __init__(self, args={}, conffile="", conftoks=[]):
         if args == {}:
             return
-
         self.datasetname=args['datasetname']
         self.dest=args['dest']

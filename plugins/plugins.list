@@ -1,6 +1,3 @@
+Plugin mkdir
 ArchivePlugin targz
 DatasetPlugin rawdataset
-DatasetPlugin hdf5dataset
-Plugin mkdir
-Plugin genericfetch
-Plugin sumtest_top

@@ -3,18 +3,23 @@
 
 import ariadneplugin
 import h5py
+import time
 
 plugin_class = "sumtest_top"
 
 
 class sumtest_top(ariadneplugin.Plugin):
     name="sumtest_top"
+    parallel=0
     internalsum=0
     datasetname=""
     checkval=0
+    start_t=0
+    end_t=0
 
 
     def run(self):
+        self.start_t=time.time()
         handler=ariadneplugin.get_can_handle("dataset/hdf5")
         h=handler("testdataset.dataset")
         f=h.get_file("./data/", h.get_file_list("./data/")[0], "r")
@@ -31,16 +36,20 @@ class sumtest_top(ariadneplugin.Plugin):
         d=f.create_dataset("result", (1,))
         d[0]=s
         f.close()
+        self.end_t=time.time()
 
 
     def depends(self):
-        return [ariadneplugin.DependencyContainer("genericfetch", {"datasetname": self.datasetname, "dest": "./data/"})]
+        deplist=[]
+        deplist.append(ariadneplugin.DependencyContainer("mkdir", {"dirname":"data"}))
+        deplist.append(ariadneplugin.DependencyContainer("genericfetch", {"datasetname": self.datasetname, "dest": "./data/"}))
+        return deplist
 
 
     def validate(self):
         try:
             f=h5py.File("./data/results.hdf5", "r")
-            retval=(f['result'][0] == self.internalsum) and (self.internalsum == self.checkval)
+            retval=(f['result'][0] == self.checkval and self.internalsum == self.checkval)
             f.close()
             return retval
         except:
@@ -48,9 +57,12 @@ class sumtest_top(ariadneplugin.Plugin):
             return 0
 
 
+    def benchmark(self):
+        return self.end_t-self.start_t
+
+
     def __init__(self, args={}, conffile="", conftoks=[]):
         if args=={}:
             return
-
         self.checkval=float(args['checkval'])
         self.datasetname=args['datasetname']

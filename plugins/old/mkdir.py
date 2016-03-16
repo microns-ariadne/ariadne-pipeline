@@ -1,13 +1,13 @@
 # mkdir.py -- Generic ariadne plugin to make a directory.
 
-import plugin
+import ariadneplugin
 import os
 import time
 
 plugin_class="mkdir"
 
 
-class mkdir(plugin.Plugin):
+class mkdir(ariadneplugin.Plugin):
     name="mkdir"
     dirname=""
     start=0
@@ -15,6 +15,7 @@ class mkdir(plugin.Plugin):
 
 
     def run(self):
+        print("Makin' a dir: "+self.dirname)
         self.start=time.time()
         os.system("mkdir -p "+self.dirname)
         self.stop=time.time()

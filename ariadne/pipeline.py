@@ -1,104 +1,92 @@
-# pipeline.py -- Contains classes and functions related to running and managing the pipeline.
-import deftools
-import ariadnetools
-import ariadneplugin
+# A newer, shinier implementation of pipeline
+# that supports the changes made to ariadne's execution model (it's luigi time!)
+
 import os
 import sys
+import tools
+import deftools
+import plugin
+import luigi
+import plugingen
+import time
+
 
 class Pipeline:
-    topplugin=None
-    topplugin_name=""
-    topplugin_args={}
-    name=""
-    #datasets=[]
+    stagenames=[]
+    trainstagenames=[]
+    datasets=[]
+    env=[]
+    plugindir=""
 
-    def __runplugin(self, plugin):
+
+    def __setenv(self):
+        for e in self.env:
+            toks=e.split('=')
+            try:
+                os.environ[toks[0]]+=toks[1]
+            except:
+                os.environ[toks[0]]=toks[1]
+
+
+    def __gen_depends(self, f, plugin):
         for d in plugin.depends():
-            print("Handling dependency: "+d.dependency_name)
-            
-            # Try to find the plugin:
-            depclass = ariadneplugin.search_plugins(d.dependency_name)
-            if depclass != None:
-                dep = depclass(d.arg_dict)
-                self.__runplugin(dep)
-            else:
-                print("ERROR: Unresolved dependency. Name: "+d.dependency_name)
-        plugin.run()
-        
-        if plugin.success() == 0:
-            print("ERROR: Could not successfully execute plugin: "+plugin.name)
-            exit(2)
+            depclass=plugin.search_plugins(d.dependency_name)
+            dep=depclass()
+            # Go recursion!
+            self.__gen_depends(f, dep)
+        plugingen.gen(plugin, f, plugin.name, self.plugindir)
 
 
-    def __check_top_stage(self, curplugin):
-        return curplugin.validate()
-
-
-    def __rcsv_get_dep_list(self, pluginname):
-        # TODO: write this efficiently. 
-        pclass=ariadneplugin.search_plugins(pluginname)
-        if pclass==None:
-            return 0
-        
-        retv=1
-        
-        plugin=pclass()
-        for d in plugin.depends():
-            retv=retv and self.__rcsv_get_dep_list(d.dependency_name)
-            
-        return retv
-        
-
-    def run(self, pipe_args):
-        # TODO: Implement dataset fetching logic here.
-        tpl = self.topplugin(pipe_args)
-        self.__runplugin(tpl)
-        return tpl
-
-            
-    def validate(self, arglist):
-        passnum=0
-        failnum=0
-        for a in arglist:
-            curplugin=self.run(a)
-            if self.__check_top_stage(curplugin):
-                print("PASS: "+a['test_name'])
-                passnum += 1
-            else:
-                print("FAIL: "+a['test_name'])
-                failnum += 1
-        total=passnum+failnum
-        print("Passed %d of %d tests. (%f pct)" % (passnum, total, passnum/total*100))
-
-
-    def benchmark(self, argdict):
-        tpl=self.topplugin(argdict)
-        # It's up to the individual plugin to report stats like accuracy, etc.
-        time_taken=tpl.benchmark()
-        print("Benchmark completed in "+str(time_taken)+" seconds.")
-        print("Benchmark arguments: "+str(argdict))
-    
-
-    def check_dependencies(self):
-        retv=self.__rcsv_get_dep_list(self.topplugin_name)
-        if retv==0:
-            print("ERROR: Not all dependencies satisfied.")
+    def __loadplugins(self):
+        if self.plugindir!="":
+            tools.init_plugins(self.plugindir)
         else:
-            print("All dependencies present.")
+           self.plugindir=tools.get_base_dir()+"/plugins"
 
 
-    def __init__(self, deffilename="", deftoks=[]):
-        if deffilename=="":
-            return        
+    def run(self, arglist):
+        start=time.time()
+        self.__setenv()
+        self.__loadplugins()
+        for s in self.stagenames:
+            fname=s+"_l.py"
+            f=open(fname, "w")
+            pclass=plugin.search_plugins(s)
+            if pclass==None:
+                print("ERROR: Plugin not found: "+s)
+                raise Exception
+            else:
+                self.__gen_depends(f, pclass())
+                
+            f.close()
+            runstr="python -m luigi --module %s_l %s_l --local-scheduler" % (s, s)
+            for a in arglist:
+                runstr+=" --%s %s" % (a[0], a[1])
+            os.system(runstr)
+        return time.time()-start
 
-        tokens=[]
-        if deftoks == []:
-            tokens = deftools.parse_file(deffilename)
+
+    def __init__(self, def_filename):
+        toks=deftools.parse_file(def_filename)
+        td=deftools.make_dict(toks)
+        
+        if not len(td['stages']):
+            print("ERROR: There must be at least one 'stage:' listing in the pipeline.")
+            raise Exception
         else:
-            tokens=deftoks
+            self.stagenames=td['stages']
         
-        self.topplugin_name=deftools.search(tokens, "topplugin")[0]
-        self.name=deftools.search(tokens, "name")[0]
-        #self.datasets=deftools.search(tokens, "datasets")
+        try:
+            self.trainstagenames=td['training']
+        except:
+            print("Warning: no training stages defined.")
         
-        self.topplugin=ariadneplugin.search_plugins(self.topplugin_name)
+        try:
+            self.datasets=td['datasets']
+        except:
+            self.datasets=self.datasets
+
+        self.env=td['environment']
+
+        if len(td['plugindir']):
+            self.plugindir=td['plugindir'][0]

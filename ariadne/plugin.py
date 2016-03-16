@@ -2,86 +2,15 @@
 # ariadne.
 import os
 import sys
-import ariadnetools
-
-class ArgException(Exception):
-    custom_message=""
-    
-
-    def __init__(self, msg=""):
-        self.custom_message=msg
-
-
-    def __str__(self):
-        return "Invalid arguments.\n"+self.custom_message
-
-
-class DependencyContainer:
-    dependency_name=""
-    arg_dict={}
-    
-
-    def __init__(self, depname, args):
-        self.arg_dict=args
-        self.dependency_name=depname
-
-
-class Plugin:
-    name=None
-    argnames=[]
-    
-    def run(self):
-        return
-
-    
-    def depends(self):
-        # Should return a list of DependencyContainers.
-        return []
-
-
-    def validate(self):
-        return 0
-
-    
-    def check_inputs(self):
-        return
-
-
-    def benchmark(self):
-        return 0
-
-
-    def success(self):
-        return 1
-
-
-    def success(self):
-        return 1
-
-    
-    def __init__(self, args={}, conffile="", conftoks=[]):
-        return
-
-
-class ArchivePlugin:
-    name=None
-    
-    
-    def can_handle(self, extension):
-        return 0
-    
-    
-    def unpack(self, file_name, destination):
-        return
-    
-    
-    def __init__(self):
-        return
+import tools
+import nose
 
 
 PLUGIN_TYPE_ARCHIVE="ArchivePlugin"
 PLUGIN_TYPE_GENERIC="Plugin"
 PLUGIN_TYPE_DATASET="DatasetPlugin"
+PLUGIN_TYPE_VALIDATION="ValidationPlugin"
+PLUGIN_TYPE_EXECUTOR="ExecutorPlugin"
 
 # Entry format: [0]=plugin object, [1]=plugin type.
 plugin_list=[]
@@ -137,7 +66,63 @@ def get_can_handle(ext):
             pl=p[0]()
             if pl.can_handle(ext):
                 return p[0]
-    return None
+    return []
+
+
+class ArgException(Exception):
+    custom_message=""
+    
+
+    def __init__(self, msg=""):
+        self.custom_message=msg
+
+
+    def __str__(self):
+        return "Invalid arguments.\n"+self.custom_message
+
+
+class DependencyContainer:
+    dependency_name=""
+    arg_dict={}
+    
+
+    def __init__(self, depname, args):
+        self.arg_dict=args
+        self.dependency_name=depname
+
+
+class Plugin:
+    name=None
+    parallel=1
+    argnames=[]
+    debugging_args={}
+    start_t=0
+    stop_t=0
+
+    
+    def run(self):
+        return
+
+    
+    def depends(self):
+        # Should return a list of DependencyContainers.
+        return []
+
+
+    def benchmark(self):
+        return
+
+    def test(self):
+        return nose.run()
+
+
+    def print_benchmark(self):
+        print("Benchmark completed in: "+str(self.benchmark())+" seconds.")
+
+    
+    def __init__(self, args={}, conffile="", conftoks=[]):
+        self.debugging_args=args
+        return
 
 
 class DatasetPlugin:
@@ -157,7 +142,7 @@ class DatasetPlugin:
     def fetch(self, destination):
         basedir=ariadnetools.get_base_dir()
         for d in self.data_list:
-            os.system(basedir+"scripts/ariadne-fetch.sh "+d+" "+destination)
+            os.system(basedir+"/scripts/ariadne-fetch.sh "+d+" "+destination)
             return 1
 
 
@@ -185,4 +170,64 @@ class DatasetPlugin:
 
 
     def __init__(self, def_filename="", def_tokens=[]):
+        return
+
+
+class ArchivePlugin:
+    name=None
+    
+    
+    def can_handle(self, extension):
+        return 0
+    
+    
+    def unpack(self, file_name, destination):
+        return
+    
+    
+    def __init__(self):
+        return
+
+
+class AriadneOp:
+    """A generic, top level interface for ariadne operations."""
+    name=None
+
+
+    def run(self, arg_dict):
+        return 0
+
+
+    def files_modified(self):
+        return []
+
+
+    def get_arg_names(self):
+        return []
+
+
+    def depends(self):
+        return []
+
+
+    def test(self):
+        return nose.run()
+
+
+    def __init__(self):
+        return
+
+
+class AriadneMLOp(AriadneOp):
+    """Ariadne interface for machine learning stuff."""
+    
+    def benchmark(self):
+        return
+
+
+class AriadneTrainOp(AriadneMLOp):
+    """A less generic interface for ariadne training operations."""
+
+
+    def train(self, dataset_name):
         return

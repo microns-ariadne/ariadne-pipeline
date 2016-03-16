@@ -1,6 +1,8 @@
 name:
 	testhdf5
+description:
+	A test HDF5 dataset.
 type:
 	dataset/hdf5
 urls:
-	file:///home/mgohde/coxlab/ariadne-pipeline/out.hdf5
+	file:///home/mgohde/coxlab/ariadne-pipeline/examples/out.hdf5

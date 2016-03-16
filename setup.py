@@ -11,8 +11,10 @@ import sys
 
 setup(
     name='ariadne-pipeline',
-    version='dev',
+    version='1.0a1',
+    description="Run, and manage machine learning pipelines.",
     scripts=['ariadne/ariadne.py', 'scripts/ariadne', 'ariadne/shell2pipe.py', 'scripts/ariadne-download.sh'],
     include_package_data=True,
+    install_requires=['h5py', 'nose', 'luigi'],
     packages=find_packages(exclude=['tests', 'scripts', 'bin']),
     )

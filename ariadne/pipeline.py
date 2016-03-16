@@ -8,6 +8,7 @@ import deftools
 import plugin
 import luigi
 import plugingen
+import time
 
 
 class Pipeline:
@@ -44,6 +45,7 @@ class Pipeline:
 
 
     def run(self, arglist):
+        start=time.time()
         self.__setenv()
         self.__loadplugins()
         for s in self.stagenames:
@@ -61,6 +63,7 @@ class Pipeline:
             for a in arglist:
                 runstr+=" --%s %s" % (a[0], a[1])
             os.system(runstr)
+        return time.time()-start
 
 
     def __init__(self, def_filename):

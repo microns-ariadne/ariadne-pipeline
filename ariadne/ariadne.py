@@ -76,10 +76,12 @@ def list_datasets(path):
             print("%s: %s" % (ds_name, ds_descrip))
             
 
-def run_dataset(action, dataset_name):
+def run_dataset(action, dataset_name, confdict):
     if action=="" and dataset_name=="":
         print_dataset_usage()
         return
+
+    dataset_destination=confdict['datadir'][0]
 
     # Determine where, exactly, this dataset is:
     fullpath="%s/%s.dataset" % (tools.get_default_dataset_dir(), dataset_name)
@@ -158,7 +160,7 @@ def run_plugins():
         o.write(namestr)
 
 
-def run_pipeline(action, pipe_name, args):
+def run_pipeline(action, pipe_name, args, confdict):
     if action == "run":
         pipe_args=build_arg_dict(args)
         p=pipeline.Pipeline(pipe_name+".pipeline")
@@ -169,7 +171,7 @@ def run_pipeline(action, pipe_name, args):
         p.check_dependencies()
 
 
-def run_test(pipe_name, test_filename):
+def run_test(pipe_name, test_filename, confdict):
     if pipe_name=="" or test_filename=="":
         print_test_usage()
         return
@@ -195,7 +197,7 @@ def run_test(pipe_name, test_filename):
     p.validate(arglist, step)
 
 
-def run_benchmark(pipe_name, args):
+def run_benchmark(pipe_name, args, confdict):
     if pipe_name=="":
         print_benchmark_usage()
         return
@@ -206,7 +208,7 @@ def run_benchmark(pipe_name, args):
     p.benchmark(argdict)
 
 
-def run_plugin(plugin_name, plugin_dir, plugin_args):
+def run_plugin(plugin_name, plugin_dir, plugin_args, confdict):
     if plugin_name=="":
         print_run_plugin_usage()
         return
@@ -229,7 +231,31 @@ def main(argv):
     if len(argv) == 1:
         print_usage()
         exit()
-        
+
+    # Now attempt to read the configuration file:
+    conftoks=[]
+    try:
+        conftoks=deftools.parse_file(tools.get_default_config_file(), 'r')
+    except:
+        # Try to write one instead:
+        print("Generating default config file at %s..." % (tools.get_default_config_file()))
+        conffile=open(tools.get_default_config_file(), 'w')
+        tools.prep_default_config_file(conffile)
+        conffile.close()
+        conftoks=tools.get_default_conf_toks()
+
+    confdict=deftools.make_dict(conftoks)
+    plugin.set_config(confdict)
+
+    # Load any plugins specified in the configuration:
+    try:
+        pdirs=confdict['plugindirs']
+        for p in pdirs:
+            tools.init_plugins(p)
+            print("Loaded plugins from: %s" % p)
+    except:
+        pass
+
     parser=argparse.ArgumentParser(description="Manage, test, and benchmark software pipelines.")
     parser.add_argument("cmd", help=argparse.SUPPRESS)
     parser.add_argument("optarg1", nargs="?")
@@ -239,19 +265,19 @@ def main(argv):
     results=parser.parse_args()
     cmd=results.cmd
     if cmd == "dataset":
-        run_dataset(results.optarg1, results.optarg2)
+        run_dataset(results.optarg1, results.optarg2, confdict)
     elif cmd == "test":
-        run_test(results.optarg1, results.optarg2)
+        run_test(results.optarg1, results.optarg2, confdict)
     elif cmd == "benchmark":
         if results.optarg2!="":
             results.moreargs.append(results.optarg2)
-        run_benchmark(results.optarg1, results.moreargs)
+        run_benchmark(results.optarg1, results.moreargs, confdict)
     elif cmd == "pipeline":
-        run_pipeline(results.optarg1, results.optarg2, results.moreargs)
+        run_pipeline(results.optarg1, results.optarg2, results.moreargs, confdict)
     elif cmd == "plugins":
         run_plugins()
     elif cmd == "runplugin":
-        run_plugin(results.optarg1, results.optarg2, results.moreargs)
+        run_plugin(results.optarg1, results.optarg2, results.moreargs, confdict)
 
 if __name__ == "__main__":
     main(sys.argv)

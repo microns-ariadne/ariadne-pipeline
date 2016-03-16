@@ -1,7 +1,7 @@
 # ariadnetools.py -- Commonly used functions for ariadne.
 import os
 import sys
-
+import deftools
 import plugin
 
 
@@ -66,6 +66,31 @@ def get_base_dir():
 
 def get_default_dataset_dir():
     return get_base_dir()+"/examples"
+
+
+def get_default_config_file():
+    return os.path.expanduser('~')+"/.ariadnerc"
+
+
+def get_default_conf_toks():
+    usrbase=os.path.expanduser('~')
+    conf_toks=[]
+    conf_toks.append(["basedir", usrbase+"/ariadne"])
+    conf_toks.append(["tmpdir", usrbase+"/ariadne/tmp"])
+    conf_toks.append(["datadir", usrbase+"/ariadne/data"])
+    conf_toks.append(["plugindirs"])
+    return conf_toks
+
+
+def prep_default_config_file(conffile):
+    usrbase=os.path.expanduser('~')
+    try:
+        os.mkdir(usrbase+'/ariadne')
+        os.mkdir(usrbase+'/ariadne/tmp')
+        os.mkdir(usrbase+'/ariadne/data')
+    except OSError: # Then the files likely exist.
+        pass
+    deftools.write_file(get_default_conf_toks(), conffile)
 
 
 def init_plugins(bdir=""):

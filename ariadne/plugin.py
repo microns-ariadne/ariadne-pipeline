@@ -69,6 +69,33 @@ def get_can_handle(ext):
     return []
 
 
+config_dict={}
+
+
+def set_config(conf_dict):
+    global config_dict
+    config_dict=conf_dict
+
+
+def get_temp_filename(filename):
+    """Returns the name of a valid temporary file."""
+    global config_dict
+    tmpdir=config_dict['tmpdir'][0]
+    return tmpdir+"/"+filename
+
+
+def get_dataset_real_list(dataset_filename):
+    """Returns a list of files from a downloaded dataset"""
+    global config_dict
+    tmpdir=config_dict['tmpdir'][0]
+    real_list=[]
+    ds_toks=deftools.parse(dataset_filename)
+    
+    data_list=deftools.search(ds_toks, "urls")
+    for d in data_list:
+        real_list.append(tools.get_url_filename(d))
+
+
 class ArgException(Exception):
     custom_message=""
     

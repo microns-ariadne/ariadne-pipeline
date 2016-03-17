@@ -88,6 +88,8 @@ def run_dataset(action, dataset_name, confdict):
     if not tools.file_exists(fullpath):
         fullpath="./%s.dataset" % dataset_name
 
+    dataset_filename=fullpath
+
     if action=="fetch":
         if not tools.file_exists(fullpath):
             print("ERROR: Dataset "+dataset_name+" does not exist either in ./ or %s." 
@@ -98,12 +100,16 @@ def run_dataset(action, dataset_name, confdict):
         if len(dataset_type) == 0:
             print("ERROR: Dataset has unspecified type. Cannot handle.")
             exit(2)
-        for hclass in dataset_handlers:
-            h = hclass[0]()
-            if h.can_handle(dataset_type):
-                h=hclass[0](dataset_filename)
-                h.fetch(dataset_destination)
-                h.unpack(dataset_destination)
+
+        dataset_handler=plugin.get_can_handle(dataset_type)
+
+        if dataset_handler==None:
+            print("Could not find a plugin to handle dataset type: %s" % dataset_type)
+            return
+
+        h=dataset_handler(dataset_filename)
+        h.fetch(dataset_destination)
+        h.unpack(dataset_destination)
 
     elif action == "list":
         list_datasets(tools.get_default_dataset_dir())
@@ -235,7 +241,7 @@ def main(argv):
     # Now attempt to read the configuration file:
     conftoks=[]
     try:
-        conftoks=deftools.parse_file(tools.get_default_config_file(), 'r')
+        conftoks=deftools.parse_file(tools.get_default_config_file())
     except:
         # Try to write one instead:
         print("Generating default config file at %s..." % (tools.get_default_config_file()))

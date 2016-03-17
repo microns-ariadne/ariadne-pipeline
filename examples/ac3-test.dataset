@@ -3,6 +3,7 @@ name:
 type:
 	dataset/hdf5
 urls:
+	https://dl.dropboxusercontent.com/content_link/g06oFQRJkWQFyzKkjHhaGm2zpG4qdNkKDkzYkEqWqYR0ZYSqpCYZihoShpl69Wnb/file?dl=1
 	https://www.dropbox.com/s/1rsaetols53gfxb/AC3_test_data.h5?dl=0
 description:
 	A manageable test dataset taken from the larger Kasthuri et al. data set

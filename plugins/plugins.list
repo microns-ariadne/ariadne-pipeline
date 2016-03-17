@@ -1,3 +1,4 @@
 Plugin mkdir
 ArchivePlugin targz
 DatasetPlugin rawdataset
+DatasetPlugin hdf5dataset

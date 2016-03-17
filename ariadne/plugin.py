@@ -66,7 +66,7 @@ def get_can_handle(ext):
             pl=p[0]()
             if pl.can_handle(ext):
                 return p[0]
-    return []
+    return None
 
 
 config_dict={}
@@ -167,7 +167,7 @@ class DatasetPlugin:
     
     
     def fetch(self, destination):
-        basedir=ariadnetools.get_base_dir()
+        basedir=tools.get_base_dir()
         for d in self.data_list:
             os.system(basedir+"/scripts/ariadne-fetch.sh "+d+" "+destination)
             return 1
@@ -179,7 +179,7 @@ class DatasetPlugin:
         contents = os.listdir(destination)
         archive_plugins = get_plugins(PLUGIN_TYPE_ARCHIVE)
         for c in contents:
-            ext = ariadnetools.get_extension(c)
+            ext = tools.get_extension(c)
             
             for a in archive_plugins:
                 p=a[0]()

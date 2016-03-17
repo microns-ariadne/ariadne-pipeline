@@ -122,20 +122,14 @@ def run_dataset(action, dataset_name, confdict):
         dataset_contents=deftools.parse_file(fullpath)
         dataset_type=deftools.search(dataset_contents, "type")[0]
         handler=None
-        dataset_handlers=plugin.get_can_handle(dataset_type)
-
-        for hclass in dataset_handlers:
-            h = hclass[0]()
-            if h.can_handle(dataset_type):
-                handler = h
-                break
+        dataset_handler=plugin.get_can_handle(dataset_type)
 
         print("Dataset: "+dataset_name)
         print("Type: "+deftools.search(dataset_contents, "type")[0])
-        if handler == None:
+        if dataset_handler == None:
             print("No plugin found to handle this type of dataset.")
         else:
-            print("Handler plugin name: "+handler.name)
+            print("Handler plugin name: "+dataset_handler.name)
             
     else:
         print_dataset_usage()

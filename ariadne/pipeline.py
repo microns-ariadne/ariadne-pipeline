@@ -51,6 +51,7 @@ class Pipeline:
         for s in self.stagenames:
             fname=s+"_l.py"
             f=open(fname, "w")
+            plugingen.genheader(f)
             pclass=plugin.search_plugins(s)
             if pclass==None:
                 print("ERROR: Plugin not found: "+s)

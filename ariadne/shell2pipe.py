@@ -76,7 +76,7 @@ def convert(script_name, dir_name, pipedef_name):
             if l[0]=='#':
                 # Write out the previous command list:
                 if len(cmd_buf)!=0:
-                    f=open(getname(dir_name, next_plugin_name, "w")
+                    f=open(getname(dir_name, next_plugin_name), "w")
                     genwrapper(f, next_plugin_name, cmd_buf)
                     f.close()
                     cmd_buf=[]
@@ -86,6 +86,13 @@ def convert(script_name, dir_name, pipedef_name):
                 env_list.append(ltoks[1])
             else:
                 cmd_buf.append(l)
+
+    # Ensure that the last plugin is covered:
+    if len(cmd_buf)!=0:
+        f=open(getname(dir_name, next_plugin_name), "w")
+        genwrapper(f, next_plugin_name, cmd_buf)
+        f.close()
+        cmd_buf=[]
 
     writepdef(pdeff, plugin_list, env_list, dir_name)
     pdeff.close()

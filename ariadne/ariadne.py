@@ -76,15 +76,19 @@ def list_datasets(path):
             print("%s: %s" % (ds_name, ds_descrip))
             
 
-def run_dataset(action, dataset_name):
+def run_dataset(action, dataset_name, confdict):
     if action=="" and dataset_name=="":
         print_dataset_usage()
         return
+
+    dataset_destination=confdict['datadir'][0]
 
     # Determine where, exactly, this dataset is:
     fullpath="%s/%s.dataset" % (tools.get_default_dataset_dir(), dataset_name)
     if not tools.file_exists(fullpath):
         fullpath="./%s.dataset" % dataset_name
+
+    dataset_filename=fullpath
 
     if action=="fetch":
         if not tools.file_exists(fullpath):
@@ -96,12 +100,16 @@ def run_dataset(action, dataset_name):
         if len(dataset_type) == 0:
             print("ERROR: Dataset has unspecified type. Cannot handle.")
             exit(2)
-        for hclass in dataset_handlers:
-            h = hclass[0]()
-            if h.can_handle(dataset_type):
-                h=hclass[0](dataset_filename)
-                h.fetch(dataset_destination)
-                h.unpack(dataset_destination)
+
+        dataset_handler=plugin.get_can_handle(dataset_type)
+
+        if dataset_handler==None:
+            print("Could not find a plugin to handle dataset type: %s" % dataset_type)
+            return
+
+        h=dataset_handler(dataset_filename)
+        h.fetch(dataset_destination)
+        h.unpack(dataset_destination)
 
     elif action == "list":
         list_datasets(tools.get_default_dataset_dir())
@@ -114,20 +122,14 @@ def run_dataset(action, dataset_name):
         dataset_contents=deftools.parse_file(fullpath)
         dataset_type=deftools.search(dataset_contents, "type")[0]
         handler=None
-        dataset_handlers=plugin.get_can_handle(dataset_type)
-
-        for hclass in dataset_handlers:
-            h = hclass[0]()
-            if h.can_handle(dataset_type):
-                handler = h
-                break
+        dataset_handler=plugin.get_can_handle(dataset_type)
 
         print("Dataset: "+dataset_name)
         print("Type: "+deftools.search(dataset_contents, "type")[0])
-        if handler == None:
+        if dataset_handler == None:
             print("No plugin found to handle this type of dataset.")
         else:
-            print("Handler plugin name: "+handler.name)
+            print("Handler plugin name: "+dataset_handler.name)
             
     else:
         print_dataset_usage()
@@ -158,7 +160,7 @@ def run_plugins():
         o.write(namestr)
 
 
-def run_pipeline(action, pipe_name, args):
+def run_pipeline(action, pipe_name, args, confdict):
     if action == "run":
         pipe_args=build_arg_dict(args)
         p=pipeline.Pipeline(pipe_name+".pipeline")
@@ -169,7 +171,7 @@ def run_pipeline(action, pipe_name, args):
         p.check_dependencies()
 
 
-def run_test(pipe_name, test_filename):
+def run_test(pipe_name, test_filename, confdict):
     if pipe_name=="" or test_filename=="":
         print_test_usage()
         return
@@ -195,7 +197,7 @@ def run_test(pipe_name, test_filename):
     p.validate(arglist, step)
 
 
-def run_benchmark(pipe_name, args):
+def run_benchmark(pipe_name, args, confdict):
     if pipe_name=="":
         print_benchmark_usage()
         return
@@ -206,7 +208,7 @@ def run_benchmark(pipe_name, args):
     p.benchmark(argdict)
 
 
-def run_plugin(plugin_name, plugin_dir, plugin_args):
+def run_plugin(plugin_name, plugin_dir, plugin_args, confdict):
     if plugin_name=="":
         print_run_plugin_usage()
         return
@@ -229,7 +231,31 @@ def main(argv):
     if len(argv) == 1:
         print_usage()
         exit()
-        
+
+    # Now attempt to read the configuration file:
+    conftoks=[]
+    try:
+        conftoks=deftools.parse_file(tools.get_default_config_file())
+    except:
+        # Try to write one instead:
+        print("Generating default config file at %s..." % (tools.get_default_config_file()))
+        conffile=open(tools.get_default_config_file(), 'w')
+        tools.prep_default_config_file(conffile)
+        conffile.close()
+        conftoks=tools.get_default_conf_toks()
+
+    confdict=deftools.make_dict(conftoks)
+    plugin.set_config(confdict)
+
+    # Load any plugins specified in the configuration:
+    try:
+        pdirs=confdict['plugindirs']
+        for p in pdirs:
+            tools.init_plugins(p)
+            print("Loaded plugins from: %s" % p)
+    except:
+        pass
+
     parser=argparse.ArgumentParser(description="Manage, test, and benchmark software pipelines.")
     parser.add_argument("cmd", help=argparse.SUPPRESS)
     parser.add_argument("optarg1", nargs="?")
@@ -239,19 +265,19 @@ def main(argv):
     results=parser.parse_args()
     cmd=results.cmd
     if cmd == "dataset":
-        run_dataset(results.optarg1, results.optarg2)
+        run_dataset(results.optarg1, results.optarg2, confdict)
     elif cmd == "test":
-        run_test(results.optarg1, results.optarg2)
+        run_test(results.optarg1, results.optarg2, confdict)
     elif cmd == "benchmark":
         if results.optarg2!="":
             results.moreargs.append(results.optarg2)
-        run_benchmark(results.optarg1, results.moreargs)
+        run_benchmark(results.optarg1, results.moreargs, confdict)
     elif cmd == "pipeline":
-        run_pipeline(results.optarg1, results.optarg2, results.moreargs)
+        run_pipeline(results.optarg1, results.optarg2, results.moreargs, confdict)
     elif cmd == "plugins":
         run_plugins()
     elif cmd == "runplugin":
-        run_plugin(results.optarg1, results.optarg2, results.moreargs)
+        run_plugin(results.optarg1, results.optarg2, results.moreargs, confdict)
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -37,3 +37,10 @@ def make_dict(tokens):
         tokdict[t[0]]=t[1:]
     
     return tokdict
+
+
+def write_file(tokens, f):
+    for t in tokens:
+        f.write("%s:\n" % t[0])
+        for entry in t[1:]:
+            f.write("\t%s\n" % entry)

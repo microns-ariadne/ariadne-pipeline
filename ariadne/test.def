@@ -1,0 +1,14 @@
+mydef:
+    a:
+        b=c
+    end
+
+    b:
+        c=d
+    end
+end
+
+foo:
+    bar
+    baz
+end

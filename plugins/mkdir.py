@@ -7,29 +7,13 @@ import time
 plugin_class="mkdir"
 
 
-class mkdir(plugin.Plugin):
+class mkdir(plugin.AriadneOp):
     name="mkdir"
-    dirname=""
-    start=0
-    stop=0
 
 
-    def run(self):
-        self.start=time.time()
-        os.system("mkdir -p "+self.dirname)
-        self.stop=time.time()
+    def get_arg_names(self):
+        return ['dirname']
 
 
-    def validate(self):
-        return os.path.isdir(self.dirname)
-
-
-    def benchmark(self):
-        return self.stop-self.start
-
-
-    def __init__(self, args={}, conffile="", conftoks=[]):
-        if args=={} and conffile=="" and conftoks==[]:
-            return
-
-        self.dirname=args['dirname']
+    def run(self, args):
+        os.system("mkdir %s" % args['dirname'])

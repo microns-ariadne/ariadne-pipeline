@@ -13,6 +13,7 @@ import time
 
 class Pipeline:
     stagenames=[]
+    stagedefs=[]
     trainstagenames=[]
     datasets=[]
     env=[]
@@ -28,13 +29,13 @@ class Pipeline:
                 os.environ[toks[0]]=toks[1]
 
 
-    def __gen_depends(self, f, plugin):
-        for d in plugin.depends():
+    def __gen_depends(self, f, pl, exectype, args):
+        for d in pl.depends():
             depclass=plugin.search_plugins(d.dependency_name)
             dep=depclass()
             # Go recursion!
             self.__gen_depends(f, dep)
-        plugingen.gen(plugin, f, plugin.name, self.plugindir)
+        plugingen.gen(pl, f, pl.name, self.plugindir)
 
 
     def __loadplugins(self):
@@ -46,36 +47,39 @@ class Pipeline:
 
     def run(self, arglist):
         start=time.time()
+        # Start by getting information about each stage:
         self.__setenv()
         self.__loadplugins()
-        for s in self.stagenames:
-            fname=s+"_l.py"
+
+        for s in self.stagedefs:
+            stageinfo=deftools.StageInfo(s)
+            modname=stageinfo.name+"_"+stageinfo.exectype
+            fname=modname+"_l.py"
             f=open(fname, "w")
             plugingen.genheader(f)
-            pclass=plugin.search_plugins(s)
+            pclass=plugin.search_plugins(stageinfo.name)
             if pclass==None:
-                print("ERROR: Plugin not found: "+s)
+                print("ERROR: Plugin not found: %s" % stageinfo.name)
                 raise Exception
             else:
-                self.__gen_depends(f, pclass())
-                
+                self.__gen_depends(f, pclass(), stageinfo.exectype, stageinfo.args)
+
             f.close()
-            runstr="python -m luigi --module %s_l %s_l --local-scheduler" % (s, s)
-            for a in arglist:
-                runstr+=" --%s %s" % (a[0], a[1])
+            runstr="python -m luigi --module %s_l %s_l --local-scheduler" % (modname, stageinfo.name)
             os.system(runstr)
+            
         return time.time()-start
 
 
     def __init__(self, def_filename):
-        toks=deftools.parse_file(def_filename)
+        toks=deftools.parse_pipeline(def_filename)
         td=deftools.make_dict(toks)
         
         if not len(td['stages']):
             print("ERROR: There must be at least one 'stage:' listing in the pipeline.")
             raise Exception
         else:
-            self.stagenames=td['stages']
+            self.stagedefs=td['stages']
         
         try:
             self.trainstagenames=td['training']

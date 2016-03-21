@@ -62,6 +62,10 @@ def convert(script_name, dir_name, pipedef_name):
     f.close()
     lines=contents.splitlines()
 
+    # Make sure that the directory exists:
+    if not os.path.isdir(dir_name):
+        os.mkdir(dir_name)
+
     next_plugin_name=""
     plugin_list=[]
     env_list=[]
@@ -73,7 +77,7 @@ def convert(script_name, dir_name, pipedef_name):
     for l in lines:
         if len(l)>0:
             ltoks=l.split()
-            if l[0]=='#':
+            if l[0]=='#' and l[0:2] != '#!':
                 # Write out the previous command list:
                 if len(cmd_buf)!=0:
                     f=open(getname(dir_name, next_plugin_name), "w")
@@ -84,6 +88,8 @@ def convert(script_name, dir_name, pipedef_name):
                 plugin_list.append(next_plugin_name)
             elif ltoks[0]=="export":
                 env_list.append(ltoks[1])
+            elif l[0:2] == '#!':
+                pass
             else:
                 cmd_buf.append(l)
 

@@ -11,7 +11,22 @@ def genheader(f):
     f.write("import luigi\nimport os\n")
 
 
-def gen(plugin, f, wrappername, plugindir):
+def gen_deps_kludge(deplist, f, plugindir):
+    """A quick kludge to get dependencies working until luigi's complete() method can be
+       worked around"""
+
+    if deplist==None:
+        return
+
+    for d in deplist:
+        f.write("        os.system('ariadne.py runplugin %s %s " % (d.dependency_name, plugindir))
+        for a in d.arg_dict:
+            f.write("%s=%s " % (a, str(d.arg_dict[a])))
+        f.write("')\n")
+            
+
+
+def gen(plugin, f, wrappername, plugindir, exectype, existingargs):
     argnames=[]
     deps=[]
     
@@ -26,42 +41,54 @@ def gen(plugin, f, wrappername, plugindir):
         pass
     
     f.write("class %s_l(luigi.Task):\n" % wrappername)
-    for a in argnames:
-        f.write("    %s=luigi.Parameter()\n" % a)
+    # Temporarily disabled for existingargs support:
+    #for a in argnames:
+    #    f.write("    %s=luigi.Parameter()\n" % a)
 
+    """
     f.write("    def requires(self):\n")
     f.write("        return")
     if len(deps)>0:
         for d in deps:
             if d!=deps[0]:
                 f.write(",")
-            f.write(" %s_t(" % d.dependency_name)
+            f.write(" %s_l(" % d.dependency_name)
             frst=None
             for a in d.arg_dict:
                 if frst==None:
                     frst=a
                 else:
                     f.write(",")
-                f.write("%s" % str(d.arg_dict[a]))
+                f.write("'%s'" % str(d.arg_dict[a]))
             f.write(")")
 
     f.write("\n")
-    f.write("    def run(self):\n")
-    f.write("        os.system('ariadne.py runplugin %s %s" % (wrappername, plugindir))
+    """
 
-    for a in argnames:
-        f.write(" "+a+"="+"'+self."+a+"+'")
+    f.write("    def run(self):\n")
+    gen_deps_kludge(deps, f, plugindir)
+    f.write("        os.system('ariadne.py %splugin %s %s" % (exectype, wrappername, plugindir))
+
+    # Temporarily disabled for existingargs support:
+    #for a in argnames:
+    #    f.write(" "+a+"="+"'+self."+a+"+'")
+
+    for e in existingargs:
+        f.write(" %s" % e)
 
     f.write("')\n")
 
-    fmod=plugin.files_modified()
-    if len(fmod)!=0:
-        f.write("   output(self):\n")
-        f.write("       return ")
-        for mod in fmod:
-            if mod!=fmod[0]:
-                f.write(",")
-            f.write("luigi.LocalTarget('%s') " % mod)
-        f.write("\n")
+    try:
+        fmod=plugin.files_modified()
+        if len(fmod)!=0:
+            f.write("   output(self):\n")
+            f.write("       return ")
+            for mod in fmod:
+                if mod!=fmod[0]:
+                    f.write(",")
+                f.write("luigi.LocalTarget('%s') " % mod)
+            f.write("\n")
+    except:
+        pass
         
     f.flush()

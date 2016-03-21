@@ -208,7 +208,7 @@ def run_benchmark(pipe_name, args, confdict):
     p.benchmark(argdict)
 
 
-def run_plugin(plugin_name, plugin_dir, plugin_args, confdict):
+def run_plugin(runstr, plugin_name, plugin_dir, plugin_args, confdict):
     if plugin_name=="":
         print_run_plugin_usage()
         return
@@ -219,8 +219,13 @@ def run_plugin(plugin_name, plugin_dir, plugin_args, confdict):
         return
     argdict=build_arg_dict(plugin_args)
     pl=pclass()
-    pl.run(argdict)
-
+    if runstr=="runplugin":
+        pl.run(argdict)
+    elif runstr=="trainplugin":
+        try:
+            pl.train(argdict)
+        except:
+            print("ERROR: Couldn't train plugin: %s" % plugin_name)
 
 def main(argv):
     # These two are mostly for the benefit of plugins.
@@ -276,8 +281,9 @@ def main(argv):
         run_pipeline(results.optarg1, results.optarg2, results.moreargs, confdict)
     elif cmd == "plugins":
         run_plugins()
-    elif cmd == "runplugin":
-        run_plugin(results.optarg1, results.optarg2, results.moreargs, confdict)
+    elif cmd == "runplugin" or cmd == "trainplugin":
+        run_plugin(cmd, results.optarg1, results.optarg2, results.moreargs, confdict)
+
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -252,9 +252,13 @@ class AriadneMLOp(AriadneOp):
         return
 
 
-class AriadneTrainOp(AriadneMLOp):
-    """A less generic interface for ariadne training operations."""
+    def get_train_arg_names(self):
+        return []
 
 
-    def train(self, dataset_name):
+    def train(self, args):
         return
+
+
+    def train_depends(self):
+        return []

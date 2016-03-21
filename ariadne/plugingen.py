@@ -15,6 +15,9 @@ def gen_deps_kludge(deplist, f, plugindir):
     """A quick kludge to get dependencies working until luigi's complete() method can be
        worked around"""
 
+    if deplist==None:
+        return
+
     for d in deplist:
         f.write("        os.system('ariadne.py runplugin %s %s " % (d.dependency_name, plugindir))
         for a in d.arg_dict:

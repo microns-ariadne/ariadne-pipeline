@@ -115,15 +115,13 @@ def parse_pipeline(filename):
 class StageInfo:
     """ Parses and contains information about a stage definition. """
     name=""
+    plugin_name=""
     args=[]
     exectype="run"
 
 
     def __init__(self, stagedef):
-        try:
-            if len(stagedef)==0
-                
-        except:
+        if not len(stagedef):
             return
 
         self.name=stagedef[0]
@@ -133,8 +131,12 @@ class StageInfo:
             toks=d.split()
 
             if len(toks)>0:
-                if toks[0]=="runtype":
+                cmd=toks[0].strip(':')
+
+                if cmd=="runtype":
                     self.exectype=toks[1]
-                elif toks[0]=="args":
+                elif cmd=="args":
                     self.args=toks[1:]
+                elif cmd=="plugin":
+                    self.plugin_name=toks[1]
         

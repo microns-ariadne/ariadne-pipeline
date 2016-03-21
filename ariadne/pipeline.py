@@ -30,15 +30,21 @@ class Pipeline:
 
 
     def __gen_depends(self, f, pl, exectype, args):
-        for d in pl.depends():
-            depclass=plugin.search_plugins(d.dependency_name)
-            dep=depclass()
-            # Go recursion!
-            self.__gen_depends(f, dep)
-        plugingen.gen(pl, f, pl.name, self.plugindir)
+        """
+        deps=pl.depends()
+        if deps!=None:
+            for d in deps:
+                depclass=plugin.search_plugins(d.dependency_name)
+                dep=depclass()
+                # Go recursion!
+                self.__gen_depends(f, dep, exectype, d.arg_dict)
+        """
+        # Dependencies are temporarily handled by plugingen.
+        plugingen.gen(pl, f, pl.name, self.plugindir, exectype, args)
 
 
     def __loadplugins(self):
+        print("Loading plugins from %s" % self.plugindir)
         if self.plugindir!="":
             tools.init_plugins(self.plugindir)
         else:
@@ -53,19 +59,19 @@ class Pipeline:
 
         for s in self.stagedefs:
             stageinfo=deftools.StageInfo(s)
-            modname=stageinfo.name+"_"+stageinfo.exectype
+            modname=stageinfo.plugin_name+"_"+stageinfo.exectype
             fname=modname+"_l.py"
             f=open(fname, "w")
             plugingen.genheader(f)
-            pclass=plugin.search_plugins(stageinfo.name)
+            pclass=plugin.search_plugins(stageinfo.plugin_name)
             if pclass==None:
-                print("ERROR: Plugin not found: %s" % stageinfo.name)
+                print("ERROR: Plugin not found: %s" % stageinfo.plugin_name)
                 raise Exception
             else:
                 self.__gen_depends(f, pclass(), stageinfo.exectype, stageinfo.args)
 
             f.close()
-            runstr="python -m luigi --module %s_l %s_l --local-scheduler" % (modname, stageinfo.name)
+            runstr="python -m luigi --module %s_l %s_l --local-scheduler" % (modname, stageinfo.plugin_name)
             os.system(runstr)
             
         return time.time()-start
@@ -76,15 +82,10 @@ class Pipeline:
         td=deftools.make_dict(toks)
         
         if not len(td['stages']):
-            print("ERROR: There must be at least one 'stage:' listing in the pipeline.")
+            print("ERROR: There must be at least one 'stages:' block in the pipeline.")
             raise Exception
         else:
             self.stagedefs=td['stages']
-        
-        try:
-            self.trainstagenames=td['training']
-        except:
-            print("Warning: no training stages defined.")
         
         try:
             self.datasets=td['datasets']
@@ -93,5 +94,10 @@ class Pipeline:
 
         self.env=td['environment']
 
-        if len(td['plugindir']):
-            self.plugindir=td['plugindir'][0]
+        try:
+            print("Plugindir: "+str(td['plugindir']))
+            if len(td['plugindir']):
+                self.plugindir=td['plugindir'][0]
+        except:
+            print("No defined plugin directory.")
+            pass

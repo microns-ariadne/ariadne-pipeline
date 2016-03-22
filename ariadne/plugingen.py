@@ -52,16 +52,17 @@ def write_dep_def(f, plugin, depnum, argdict, plugindir):
     return namestr
 
 
-def parse_deps(plugin, f, plugindir, args):
-    deplist=plugin.depends()
+def parse_deps(pl, f, plugindir, args, depnum):
+    deplist=pl.depends()
     classlist=[]
     inlinelist=[]
 
-    depnum=0
+    print("Recursing on: %s" % pl.name)
 
     if deplist!=None:
         for d in deplist:
-            dclass=plugins.search_plugins(d.dependency_name)
+            depnum+=1
+            dclass=plugin.search_plugins(d.dependency_name)
             if dclass==None:
                 print("Couldn't find plugin for dependency: %s" % d.dependency_name)
                 raise Exception
@@ -70,20 +71,23 @@ def parse_deps(plugin, f, plugindir, args):
                 # for inline execution:
                 dep=dclass()
 
-                (a, b)=parse_deps(ddep, f, plugindir, d.arg_dict)
+                (a, b, c)=parse_deps(ddep, f, plugindir, d.arg_dict, depnum)
                 classlist.extend(a)
                 inlinelist.extend(b)
 
-    if plugin.files_modified() == []:
-        inline.append((dep, args, dep.name))
+    depnum+=1
+
+    if pl.files_modified() == []:
+        inlinelist.append((pl, args, pl.name))
     else:
-        gen_name=write_dep_def(f, dep, depnum, d.arg_dict, plugindir)
-        classlist.append((dep, args, gen_name))
+        gen_name=write_dep_def(f, pl, depnum, args, plugindir)
+        classlist.append((pl, args, gen_name))
 
-    return (classlist, inlinelist)
+    # Return depnum so that it can be used to generate unique-ish dependency names.
+    return (classlist, inlinelist, depnum)
 
 
-def gen(plugin, f, wrappername, plugindir, exectype, existingargs):
+def gen(pl, f, wrappername, plugindir, exectype, existingargs):
     argnames=[]
     deps=[]
 
@@ -91,23 +95,30 @@ def gen(plugin, f, wrappername, plugindir, exectype, existingargs):
     inlinedeplist=[]
     
     try:
-        argnames=plugin.get_arg_names()
+        argnames=pl.get_arg_names()
     except:
         pass
 
-    try:
-        deplist=plugin.depends()
-        for d in deplist:
-            dclass=plugins.search_plugins(d.dependency_name)
-            if dclass==None:
-                print("Couldn't find plugin for dependency: %s" % d.dependency_name)
-                raise Exception
-            else:
-                (a, b)=parse_deps(dclass(), f, plugindir, d.arg_disct)
-                classdeplist.extend(a)
-                inlinedeplist.extend(b)
-    except:
-        pass
+#    try:
+    deplist=pl.depends()
+
+    print("Number of dependencies: %d" % len(deplist))
+    depnum=0
+
+    for d in deplist:
+        dclass=plugin.search_plugins(d.dependency_name)
+        if dclass==None:
+            print("Couldn't find plugin for dependency: %s" % d.dependency_name)
+            raise Exception
+        else:
+            (a, b, depnum)=parse_deps(dclass(), f, plugindir, d.arg_dict, depnum)
+            classdeplist.extend(a)
+            inlinedeplist.extend(b)
+            depnum+=1
+
+#    except:
+#        print("There's been an exception for some reason")
+#        pass
 
     print("Number of class dependencies: %d" % len(classdeplist))
     print("Number of inline dependencies: %d" % len(inlinedeplist))
@@ -147,7 +158,7 @@ def gen(plugin, f, wrappername, plugindir, exectype, existingargs):
     f.write("')\n")
 
     try:
-        fmod=plugin.files_modified()
+        fmod=pl.files_modified()
         if len(fmod)!=0:
             f.write("   output(self):\n")
             f.write("       return ")

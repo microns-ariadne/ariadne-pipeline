@@ -138,3 +138,29 @@ def getenv(var_name):
 def setenv(var_name, value):
     """Attempts to set the specified environment variable."""
     os.environ[var_name]=value
+
+
+def get_dir_delta(beforelisting, afterlisting):
+    """Determines which files were added, removed, or remained the same in a directory."""
+    deltas=[]
+
+    # Find files added.
+    for a in afterlisting:
+        added=1
+
+        for b in beforelisting:
+            added=added and b!=a
+
+        deltas.append((added, a))
+
+    # Find the files removed (if any):
+    for b in beforelisting:
+        removed=1
+
+        for a in afterlisting:
+            removed=removed and b!=a
+
+        if removed:
+            deltas.append((-1, b))
+
+    return deltas

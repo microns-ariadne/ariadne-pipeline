@@ -3,6 +3,7 @@
 
 
 def parse_stream(f):
+    """Parses the specified file for basic definition file information."""
     contents = f.read()
     lines = contents.splitlines()
     tokens = []
@@ -18,6 +19,7 @@ def parse_stream(f):
 
 
 def parse_file(filename):
+    """Attempts to open and parse the specified file."""
     f = open(filename, "r")
     tokens=parse_stream(f)
     f.close()
@@ -26,6 +28,7 @@ def parse_file(filename):
 
 
 def search(tokens, section):
+    """Searches the given token list for the given block of information.."""
     for t in tokens:
         if t[0] == section:
             return t[1:]
@@ -33,6 +36,7 @@ def search(tokens, section):
 
 
 def make_dict(tokens):
+    """Converts a parsed list of tokens to a dictionary."""
     tokdict={}
     
     for t in tokens:
@@ -42,6 +46,7 @@ def make_dict(tokens):
 
 
 def write_file(tokens, f):
+    """Formats and writes the specified token list to a definition file."""
     for t in tokens:
         f.write("%s:\n" % t[0])
         for entry in t[1:]:
@@ -83,6 +88,7 @@ def parse_block(lines):
             
 
 def parse_nested_stream(f):
+    """Parses all blocks in the given file."""
     contents=f.read()
     offset=0
     top=[]

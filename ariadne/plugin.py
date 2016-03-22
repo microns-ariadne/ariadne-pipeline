@@ -17,6 +17,7 @@ plugin_list=[]
 
 
 def load_plugin(module_name):
+    """Loads a plugin and appends it to plugin_list."""
     mod=__import__(module_name)
 
     if hasattr(mod, 'plugin_class'):
@@ -27,6 +28,7 @@ def load_plugin(module_name):
 
 
 def load_plugins(list_file, base_dir):
+    """Loads all plugins given a base directory and a plugin list file."""
     f=open(list_file, 'r')
     contents=f.read()
     plugin_names=contents.splitlines()
@@ -43,6 +45,7 @@ def load_plugins(list_file, base_dir):
 
 
 def get_plugins(plugin_type):
+    """Returns a list of plugins that are of the specified type."""
     ret_list=[]
     
     for p in plugin_list:
@@ -53,6 +56,7 @@ def get_plugins(plugin_type):
 
 
 def search_plugins(plugin_name):
+    """Returns the first plugin with the specified name or None if not found."""
     for p in plugin_list:
         o=p[0]()
         if o.name==plugin_name:
@@ -61,6 +65,7 @@ def search_plugins(plugin_name):
 
 
 def get_can_handle(ext):
+    """Returns the first plugin that can handle the specified extension."""
     for p in plugin_list:
         if p[1]!=PLUGIN_TYPE_GENERIC:
             pl=p[0]()
@@ -73,6 +78,7 @@ config_dict={}
 
 
 def set_config(conf_dict):
+    """Sets the global configuration dictionary to the specified value."""
     global config_dict
     config_dict=conf_dict
 
@@ -97,6 +103,9 @@ def get_dataset_real_list(dataset_filename):
 
 
 class ArgException(Exception):
+    """Exception to specify cases where there are invalid/insufficient arguments
+       to run the specified plugin.
+    """
     custom_message=""
     
 
@@ -109,6 +118,7 @@ class ArgException(Exception):
 
 
 class DependencyContainer:
+    """A simple container class for dependency-related information."""
     dependency_name=""
     arg_dict={}
     
@@ -119,6 +129,7 @@ class DependencyContainer:
 
 
 class Plugin:
+    """A generic plugin. Should be replaced with AriadneOp."""
     name=None
     parallel=1
     argnames=[]
@@ -153,20 +164,24 @@ class Plugin:
 
 
 class DatasetPlugin:
-    # Note: this class is defined at the bottom of the file because it makes
-    # use of the ability to search for other plugins.
+    """A special class of plugin intended to fetch and manage datasets."""
     name=None
     data_list=[]
     
     def can_handle(self, dataset_type):
+        """Should return 1 if this plugin can handle the specified dataset type."""
         return 0
     
 
     def validate(self):
+        """Validates the integrity of a dataset and returns a boolean
+           representing whether the dataset passed all checks.
+        """
         return 0
     
     
     def fetch(self, destination):
+        """Fetches a dataset and stores it in the destination specified."""
         basedir=tools.get_base_dir()
         for d in self.data_list:
             os.system(basedir+"/scripts/ariadne-fetch.sh "+d+" "+destination)
@@ -174,6 +189,9 @@ class DatasetPlugin:
 
 
     def unpack(self, destination):
+        """If the dataset is distributed as an archive, unpack the dataset in the
+           destination specified.
+        """
         if destination == "":
             destination = "."
         contents = os.listdir(destination)
@@ -188,11 +206,13 @@ class DatasetPlugin:
                 return 1
 
     def get_file_list(self, destination):
+        """Returns a list of all files in the dataset."""
         # This and get_file exist so that stages can get data for themselves.
         return os.listdir(destination)
 
 
     def get_file(self, destination, name, mode):
+        """Returns a specific file in the dataset."""
         return open(destination+"/"+name, mode)
 
 
@@ -201,14 +221,19 @@ class DatasetPlugin:
 
 
 class ArchivePlugin:
+    """A plugin class intedned to wrap existing archive tools."""
     name=None
     
     
     def can_handle(self, extension):
+        """Returns 1 if this plugin can handle the extension specified."""
         return 0
     
     
     def unpack(self, file_name, destination):
+        """Unpacks the archive specified and stores its contents in the destination
+           specified.
+        """
         return
     
     
@@ -222,22 +247,28 @@ class AriadneOp:
 
 
     def run(self, arg_dict):
+        """Executes an operation using the args defined in arg_dict"""
         return 0
 
 
     def files_modified(self):
+        """Returns a list of files modified by this plugin."""
         return []
 
 
     def get_arg_names(self):
+        """Returns a list of argument names.
+           These must be the same as the indices expected of run()'s arg_dict"""
         return []
 
 
     def depends(self):
+        """Returns a list of DependencyContainers"""
         return []
 
 
     def test(self):
+        """Executes any nose tests imported or defined in the plugin."""
         return nose.run()
 
 
@@ -248,17 +279,23 @@ class AriadneOp:
 class AriadneMLOp(AriadneOp):
     """Ariadne interface for machine learning stuff."""
     
-    def benchmark(self):
+    def benchmark(self, arg_dict):
+        """Performs a benchmarking operation."""
         return
 
 
     def get_train_arg_names(self):
+        """Returns a list of argument names to be used for the train() method."""
         return []
 
 
     def train(self, args):
+        """Performs a training operation.
+           This method is invoked in the same way as AriadneOp.run()"""
         return
 
 
     def train_depends(self):
+        """Returns a list of DependencyContainers specific to the requirements
+           of the train() method."""
         return []

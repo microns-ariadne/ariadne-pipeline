@@ -21,6 +21,7 @@ class Pipeline:
 
 
     def __setenv(self):
+        """Appends and installs all environment variables."""
         for e in self.env:
             toks=e.split('=')
             try:
@@ -30,20 +31,13 @@ class Pipeline:
 
 
     def __gen_depends(self, f, pl, exectype, args):
-        """
-        deps=pl.depends()
-        if deps!=None:
-            for d in deps:
-                depclass=plugin.search_plugins(d.dependency_name)
-                dep=depclass()
-                # Go recursion!
-                self.__gen_depends(f, dep, exectype, d.arg_dict)
-        """
-        # Dependencies are temporarily handled by plugingen.
+        """Generates all files necessary to correctly execute the given plugin."""
+        # Dependencies are handled by plugingen.
         plugingen.gen(pl, f, pl.name, self.plugindir, exectype, args)
 
 
     def __loadplugins(self):
+        """Attempts to load all plugins specified in the pipeline definition file."""
         print("Loading plugins from %s" % self.plugindir)
         if self.plugindir!="":
             tools.init_plugins(self.plugindir)
@@ -52,6 +46,7 @@ class Pipeline:
 
 
     def run(self, arglist):
+        """Runs the pipeline."""
         start=time.time()
         # Start by getting information about each stage:
         self.__setenv()
@@ -78,6 +73,7 @@ class Pipeline:
 
 
     def __init__(self, def_filename):
+        """Parses a pipeline definition file and sets up values for future pipeline execution."""
         toks=deftools.parse_pipeline(def_filename)
         td=deftools.make_dict(toks)
         

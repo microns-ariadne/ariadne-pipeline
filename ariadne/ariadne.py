@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # This is a temporary version of ariadne as I change argument handling
 
-#!/usr/bin/env python
-
 import sys
 import os
 import plugin
@@ -15,6 +13,7 @@ import argparse
 
 
 def print_usage():
+    """Prints a general usage statement for ariadne."""
     print("Usage: ariadne.py <command> [args]")
     print("Manage, test, benchmark, and run software pipelines.")
     print("\nWhere <command> is one of the following:")
@@ -26,6 +25,7 @@ def print_usage():
 
 
 def print_dataset_usage():
+    """Prints a usage statement for the dataset component of ariadne."""
     print("Usage: ariadne.py dataset <action> [datasetname] [destination]")
     print("\nWhere <action> is one of the following:")
     print("\tfetch\tFetch, unpack, and validate a dataset.")
@@ -34,6 +34,7 @@ def print_dataset_usage():
 
 
 def print_pipeline_usage():
+    """Prints a usage statement for the pipeline component of ariadne."""
     print("Usage: ariadne.py pipeline <action> <pipelinename> [pipeline args]")
     print("\nWhere <action> is one of the following:")
     print("\trun         \tRun the pipeline.")
@@ -41,16 +42,19 @@ def print_pipeline_usage():
 
 
 def print_test_usage():
+    """Prints a usage statement for the test component of ariadne."""
     print("Usage: ariadne.py test <pipelinename> <test definition file> [args]")
 
 
 def print_benchmark_usage():
+    """Prints a usage statement for the benchmark component of ariadne."""
     print("Usage: ariadne.py benchmark <pipelinename> [pipeline args]")
     print("\nWhere [pipeline args] is a list of all arguments to send")
     print("\tto the pipeline.")
 
 
 def build_arg_dict(arg_list):
+    """Builds a dictionary from an argument listing."""
     d={}
     for a in arg_list:
         toks=a.split('=')
@@ -59,6 +63,7 @@ def build_arg_dict(arg_list):
 
 
 def list_datasets(path):
+    """Lists information for all datasets present in the given path."""
     dirlisting=os.listdir(path)
     for entry in dirlisting:
         if tools.get_extension(entry)==".dataset":
@@ -77,6 +82,7 @@ def list_datasets(path):
             
 
 def run_dataset(action, dataset_name, confdict):
+    """Performs actions related to fetching, unpacking, and managing datasets."""
     if action=="" and dataset_name=="":
         print_dataset_usage()
         return
@@ -137,6 +143,7 @@ def run_dataset(action, dataset_name, confdict):
 
 
 def run_plugins():
+    """Lists all currently installed plugins."""
     print("List of plugins:")
     o = sys.stdout
     longest_len=0
@@ -161,6 +168,7 @@ def run_plugins():
 
 
 def run_pipeline(action, pipe_name, args, confdict):
+    """Performs actions related to running and managing pipelines."""
     if action == "run":
         pipe_args=build_arg_dict(args)
         p=pipeline.Pipeline(pipe_name+".pipeline")
@@ -172,6 +180,7 @@ def run_pipeline(action, pipe_name, args, confdict):
 
 
 def run_test(pipe_name, test_filename, confdict):
+    """Performs actions related to testing plugins and pipelines."""
     if pipe_name=="" or test_filename=="":
         print_test_usage()
         return
@@ -198,6 +207,7 @@ def run_test(pipe_name, test_filename, confdict):
 
 
 def run_benchmark(pipe_name, args, confdict):
+    """Performs actions related to benchmarking plugins and pipelines."""
     if pipe_name=="":
         print_benchmark_usage()
         return
@@ -209,6 +219,7 @@ def run_benchmark(pipe_name, args, confdict):
 
 
 def run_plugin(runstr, plugin_name, plugin_dir, plugin_args, confdict):
+    """Runs an individual plugin by the method specified."""
     if plugin_name=="":
         print_run_plugin_usage()
         return
@@ -228,6 +239,7 @@ def run_plugin(runstr, plugin_name, plugin_dir, plugin_args, confdict):
             print("ERROR: Couldn't train plugin: %s" % plugin_name)
 
 def main(argv):
+    """Entry point and dispatcher for the ariadne cli."""
     # These two are mostly for the benefit of plugins.
     sys.path.append(".")
     sys.path.append(tools.get_base_dir()+"/ariadne")

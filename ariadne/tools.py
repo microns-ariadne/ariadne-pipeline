@@ -6,6 +6,9 @@ import plugin
 
 
 def get_extension(name):
+    """Returns the full extension for a given file.
+       Example: 'mytar.tar.gz' -> '.tar.gz'
+    """
     tmp=name.split('.')
 
     ext=""
@@ -17,6 +20,7 @@ def get_extension(name):
 
 
 def get_url_filename(url):
+    """Attempts to get the remote filename referred to by the url specified."""
     tmp=url.split('/')
     
     if len(tmp)>0:
@@ -26,10 +30,14 @@ def get_url_filename(url):
 
 
 def get_url_extension(url):
+    """Returns the extension of the given url."""
     return get_extension(get_url_filename)
 
 
 def file_exists(filename, extensions=[]):
+    """Returns 1 if the specified file exists. Can also
+       apply a list of extensions to the file while searching.
+    """
     if extensions==[]:
         return os.path.isfile(filename)
 
@@ -42,6 +50,9 @@ def file_exists(filename, extensions=[]):
 
 
 def get_file_exists(filename, extensions):
+    """Returns the first filename with any of the extensions 
+       in the list if it exists.
+    """
     if file_exists(filename):
         return filename
 
@@ -53,6 +64,7 @@ def get_file_exists(filename, extensions):
 
 
 def get_base_dir():
+    """Attempts to locate ariadne's install directory."""
     try:
         d=os.environ['ARIADNE_BASE']
         if d[len(d)-1] != '/':
@@ -65,14 +77,17 @@ def get_base_dir():
 
 
 def get_default_dataset_dir():
+    """Returns the default directory in which to search for dataset files."""
     return get_base_dir()+"/examples"
 
 
 def get_default_config_file():
+    """Returns the default configuration file location."""
     return os.path.expanduser('~')+"/.ariadnerc"
 
 
 def get_default_conf_toks():
+    """Returns a list of default options for a configuration file."""
     usrbase=os.path.expanduser('~')
     conf_toks=[]
     conf_toks.append(["basedir", usrbase+"/ariadne"])
@@ -83,6 +98,7 @@ def get_default_conf_toks():
 
 
 def prep_default_config_file(conffile):
+    """Creates an ariadne directory structure and writes a default configuration file."""
     usrbase=os.path.expanduser('~')
     try:
         os.mkdir(usrbase+'/ariadne')
@@ -94,6 +110,9 @@ def prep_default_config_file(conffile):
 
 
 def init_plugins(bdir=""):
+    """Loads and initializes all plugins in the specified directory or the default directory
+       if unspecified.
+    """
     filename=""
     if bdir=="":
         filename=get_base_dir()+"/plugins/plugins.list"
@@ -108,6 +127,7 @@ def init_plugins(bdir=""):
 
 
 def getenv(var_name):
+    """Attempts to return the specified environment variable."""
     try:
         print(os.environ[var_name])
         return os.environ[var_name]
@@ -116,4 +136,31 @@ def getenv(var_name):
 
 
 def setenv(var_name, value):
+    """Attempts to set the specified environment variable."""
     os.environ[var_name]=value
+
+
+def get_dir_delta(beforelisting, afterlisting):
+    """Determines which files were added, removed, or remained the same in a directory."""
+    deltas=[]
+
+    # Find files added.
+    for a in afterlisting:
+        added=1
+
+        for b in beforelisting:
+            added=added and b!=a
+
+        deltas.append((added, a))
+
+    # Find the files removed (if any):
+    for b in beforelisting:
+        removed=1
+
+        for a in afterlisting:
+            removed=removed and b!=a
+
+        if removed:
+            deltas.append((-1, b))
+
+    return deltas

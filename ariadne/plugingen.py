@@ -184,3 +184,18 @@ def gen(pl, f, wrappername, plugindir, exectype, existingargs):
         pass
         
     f.flush()
+
+
+def gentest(pl, f, wrappername, plugindir, exectype, existingargs):
+    """Generates a luigi wrapper that can do internal testing."""
+
+    # This will be the same as gen, but with a custom complete() method.
+    gen(pl, f, wrappername, plugindir, exectype, existingargs)
+
+    # Now write the complete() method:
+    f.write("   def complete(self):\n")
+    f.write("       return not 0xFF00 & os.system('ariadne.py testplugin %s " % (wrappername)) 
+    for e in existingargs:
+        f.write(" %s" % e)
+
+    f.write("')\n")

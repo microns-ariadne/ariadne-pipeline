@@ -36,6 +36,11 @@ class Pipeline:
         plugingen.gen(pl, f, pl.name, self.plugindir, exectype, args)
 
 
+    def __gen_test_depends(self, f, pl, exectype, args):
+        """Generates all files necessary to correctly test and execute the given plugin."""
+        plugingen.gentest(pl, f, pl.name, self.plugindir, exectype, args)
+
+
     def __loadplugins(self):
         """Attempts to load all plugins specified in the pipeline definition file."""
         print("Loading plugins from %s" % self.plugindir)
@@ -69,6 +74,30 @@ class Pipeline:
             runstr="python -m luigi --module %s_l %s_l --local-scheduler" % (modname, stageinfo.plugin_name)
             os.system(runstr)
             
+        return time.time()-start
+
+
+    def test(self, arglist):
+        """Runs and then tests each pipeline module."""
+        start=time.time()
+
+        self.__setenv()
+        self.__loadplugins()
+
+        for s in self.stagedefs:
+            stageinfo=deftools.StageInfo(s)
+            modname=stageinfo.plugin_name+"_"+stageinfo.exectype+"_test"
+            fname=modname+"_l.py"
+            f=open(fname, "w")
+            plugingen.genheader(f)
+            pclass=plugin.search_plugins(stageinfo.plugin_name)
+
+            if pclass==None:
+                print("ERROR: Plugin not found: %s" % stageinfo.plugin_name)
+                raise Exception
+            else:
+                self.__gen_depends(f, pclass(), stageinfo.exectype, stageinfo.args)
+
         return time.time()-start
 
 

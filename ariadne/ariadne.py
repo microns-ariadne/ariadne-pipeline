@@ -237,6 +237,15 @@ def run_plugin(runstr, plugin_name, plugin_dir, plugin_args, confdict):
             pl.train(argdict)
         except:
             print("ERROR: Couldn't train plugin: %s" % plugin_name)
+    elif runstr=="testplugin":
+        retv=0
+
+        try:
+            retv=pl.test()
+        except:
+            print("ERROR: Couldn't test plugin: %s" % plugin_name)
+
+        exit(not retv)
 
 def main(argv):
     """Entry point and dispatcher for the ariadne cli."""

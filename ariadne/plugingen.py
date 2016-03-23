@@ -5,6 +5,7 @@ import tools
 import os
 import sys
 import datetime
+import random
 
 
 def genheader(f):
@@ -97,7 +98,7 @@ def parse_deps(pl, f, plugindir, args, depnum):
     return (classlist, inlinelist, depnum)
 
 
-def gen(pl, f, wrappername, plugindir, exectype, existingargs):
+def gen(pl, f, wrappername, plugindir, exectype, existingargs, customoutputline="", customruncmd=""):
     """Generates a luigi wrapper for the specified plugin."""
     argnames=[]
     deps=[]
@@ -163,25 +164,31 @@ def gen(pl, f, wrappername, plugindir, exectype, existingargs):
 
     f.write("    def run(self):\n")
     gen_deps_inline(inlinedeplist, f, plugindir)
-    f.write("        os.system('ariadne.py %splugin %s %s" % (exectype, wrappername, plugindir))
+    if customruncmd!="":
+        f.write("       %s\n" % customruncmd)
+    f.write("       os.system('ariadne.py %splugin %s %s" % (exectype, wrappername, plugindir))
 
     for e in existingargs:
         f.write(" %s" % e)
 
     f.write("')\n")
 
-    try:
-        fmod=pl.files_modified()
-        if len(fmod)!=0:
-            f.write("   output(self):\n")
-            f.write("       return ")
-            for mod in fmod:
-                if mod!=fmod[0]:
-                    f.write(",")
-                f.write("luigi.LocalTarget('%s') " % mod)
-            f.write("\n")
-    except:
-        pass
+    if customoutputline=="":
+        try:
+            fmod=pl.files_modified()
+            if len(fmod)!=0:
+                f.write("   output(self):\n")
+                f.write("       return ")
+                for mod in fmod:
+                    if mod!=fmod[0]:
+                        f.write(",")
+                    f.write("luigi.LocalTarget('%s') " % mod)
+                f.write("\n")
+        except:
+            pass
+    else:
+        f.write("   output(self):\n")
+        f.write("       return %s\n" % customoutputline)
         
     f.flush()
 
@@ -189,8 +196,17 @@ def gen(pl, f, wrappername, plugindir, exectype, existingargs):
 def gentest(pl, f, wrappername, plugindir, exectype, existingargs):
     """Generates a luigi wrapper that can do internal testing."""
 
+    # Generate a checkpoint filename:
+    ckpf="%s%d.chkpt" % (wrappername, int(round(random.random()*1000000))
+
+    # Generate a command to generate the checkpoint:
+    chkgencmd="os.system('touch %s')" % ckpf
+
+    # Generate a custom output line:
+    output="luigi.LocalTarget('%s')" % chkpf
+
     # This will be the same as gen, but with a custom complete() method.
-    gen(pl, f, wrappername, plugindir, exectype, existingargs)
+    gen(pl, f, wrappername, plugindir, exectype, existingargs, chkgencmd)
 
     # Now write the complete() method:
     f.write("   def complete(self):\n")

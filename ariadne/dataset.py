@@ -1,13 +1,12 @@
 # dataset.py -- Tools for plugins that require dataset integration.
+import os
 import tools
 import plugin
 import deftools
 
 
-loglist=[]
 
-
-def fetchunpack_datset(dataset_name, dataset_destination=""):
+def fetchunpack_dataset(dataset_name, dataset_destination=""):
     if dataset_destination=="":
         dataset_destination=tools.get_default_dataset_dir()+"/"+dataset_name
         try:
@@ -49,12 +48,14 @@ def fetchunpack_datset(dataset_name, dataset_destination=""):
 
     deltas=tools.get_dir_delta(pre, post)
 
-    f=open("%s/%s.log" % (dataset_destination, datasetname))
+    f=open("%s/%s.log" % (dataset_destination, dataset_name), "w")
 
     for d in deltas:
         f.write("%d %s\n" % (d[0], d[1]))
 
     f.close()
+
+    return dataset_destination
 
     
 def check_datset_fetched(datasetname, dest=""):
@@ -66,6 +67,44 @@ def check_datset_fetched(datasetname, dest=""):
     return tools.file_exists("%s/%s.log" % (dest, datasetname))
 
 
-def get_dataset_files(datasetname):
-    pass
+def get_dataset_files(dataset_name, dataset_dir):
+    """Gets a listing of all of the files in a dataset.
+       Assumes that the dataset exists and has been fetched."""
 
+    if not tools.file_exists(dataset_dir+"/%s.log" % dataset_name):
+        print("ERROR: Dataset transaction log does not exist. Returning directory listing...")
+        return os.listdir(dataset_dir)
+
+    f=open(dataset_dir+"/%s.log" % dataset_name, "r")
+    contents=f.read()
+    f.close()
+    
+    lines=contents.splitlines()
+    flist=[]
+
+    for l in lines:
+        toks=lines.split()
+
+        try:
+            flist.append(toks[1])
+        except:
+            pass
+
+    return flist
+
+
+def get_dataset_plugin(datasetname):
+    fullpath="./%s.dataset" % datasetname
+
+    if not tools.file_exists(fullpath):
+        fullpath="%s/%s.dataset" % (tools.get_default_dataest_dir(), datasetname)
+
+    if not tools.file_exists(fullpath):
+        print("ERROR: Dataset definition file for %s not found." % datasetname)
+        return None
+
+    toks=deftools.parse_file(fullpath)
+
+    typetok=deftools.search(toks, "type")[0]
+
+    return plugin.get_can_handle(typetok)

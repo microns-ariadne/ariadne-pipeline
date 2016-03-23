@@ -8,6 +8,7 @@ import tools
 import pipeline
 import deftools
 import argparse
+import dataset
 
 # ariadne.py -- command line interface for ariadne.
 
@@ -97,25 +98,9 @@ def run_dataset(action, dataset_name, confdict):
     dataset_filename=fullpath
 
     if action=="fetch":
-        if not tools.file_exists(fullpath):
-            print("ERROR: Dataset "+dataset_name+" does not exist either in ./ or %s." 
-                    % tools.get_default_dataset_dir())
-            return
-        dataset_contents = deftools.parse_file(dataset_filename)
-        dataset_type = deftools.search(dataset_contents, "type")[0]
-        if len(dataset_type) == 0:
-            print("ERROR: Dataset has unspecified type. Cannot handle.")
-            exit(2)
+        loc=dataset.fetchunpack_dataset(dataset_name, dataset_destination)
 
-        dataset_handler=plugin.get_can_handle(dataset_type)
-
-        if dataset_handler==None:
-            print("Could not find a plugin to handle dataset type: %s" % dataset_type)
-            return
-
-        h=dataset_handler(dataset_filename)
-        h.fetch(dataset_destination)
-        h.unpack(dataset_destination)
+        print("Dataset unpacked to %s" % loc)
 
     elif action == "list":
         list_datasets(tools.get_default_dataset_dir())
@@ -136,6 +121,32 @@ def run_dataset(action, dataset_name, confdict):
             print("No plugin found to handle this type of dataset.")
         else:
             print("Handler plugin name: "+dataset_handler.name)
+
+        log_filename="%s/%s.log" % (dataset_destination, dataset_name)
+        if tools.file_exists(log_filename):
+            lf=open(log_filename, "r")
+            contents=lf.read()
+            lf.close()
+
+            lines=contents.splitlines()
+
+            print("Dataset transaction log:")
+            o=sys.stdout
+
+            for l in lines:
+                toks=l.split()
+
+                try:
+                    if toks[0]=="-1":
+                        o.write("\x1B[31;49;2m Removed: \x1B[39;49;0m")
+                    elif toks[0]=="1":
+                        o.write("\x1B[32;49;2m Added:   \x1B[39;49;0m")
+                    elif toks[0]=="0":
+                        o.write("Same:    ")
+
+                    o.write("%s\n" % toks[1])
+                except:
+                    pass
             
     else:
         print_dataset_usage()

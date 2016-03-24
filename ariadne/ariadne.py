@@ -58,8 +58,9 @@ def build_arg_dict(arg_list):
     """Builds a dictionary from an argument listing."""
     d={}
     for a in arg_list:
-        toks=a.split('=')
-        d[toks[0]]=toks[1]
+        if a!=None:
+            toks=a.split('=')
+            d[toks[0]]=toks[1]
     return d
 
 
@@ -189,6 +190,9 @@ def run_pipeline(action, pipe_name, args, confdict):
         p=pipeline.Pipeline(pipe_name+".pipeline")
         p.check_dependencies()
 
+    else:
+        print_pipeline_usage()
+
 
 def run_test(pipe_name, test_filename, confdict):
     """Performs actions related to testing plugins and pipelines."""
@@ -219,7 +223,7 @@ def run_test(pipe_name, test_filename, confdict):
 
 def run_benchmark(pipe_name, args, confdict):
     """Performs actions related to benchmarking plugins and pipelines."""
-    if pipe_name=="":
+    if pipe_name=="" or pipe_name==None:
         print_benchmark_usage()
         return
     pipe_name=args[0]

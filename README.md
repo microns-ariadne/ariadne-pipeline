@@ -1,7 +1,7 @@
 # ariadne-pipeline - Process and software pipeline management tool.
 
 NOTE: ariadne-pipeline is still under development and testing. Overall behavior is mostly stable, but internal APIs and plugin specifications are subject to change.
-Documentation valid for version 1.0a4
+Documentation valid for version 1.0a10
 
 ## The CLI
 ariadne's core functions can be interacted with through ariadne.py:
@@ -19,7 +19,13 @@ Where <command> is one of the following:
 ### ariadne dataset
 This tool is used to fetch and prepare datasets for projects.
 It is invoked in the following form:
-`ariadne.py dataset <command> [dataset name]`
+
+
+```bash
+ariadne.py dataset <command> [dataset name]
+```
+
+
 Where command may be one of the following:
 
 * fetch -- Fetches the dataset named by [dataset name]
@@ -29,7 +35,40 @@ Where command may be one of the following:
 The ariadne comes with a number of example datasets. These and any dataset definitions in the current directory can be interacted with through ariadne by specifying the name of the dataset without any file extensions, etc. 
 
 ### ariadne pipeline
-Runs a pipeline. 
+Compiles and executes a pipeline. It is invoked in the following form:
+
+
+```bash
+ariadne.py pipeline <action> <pipeline name> [args]
+```
+
+
+The following actions are supported:
+* run -- Executes the pipeline.
+* checkdepends -- Attempts to check whether all of the stages and plugins defined in the pipeline exist and are loadable. This can be useful for debugging.
+
+Aruguments are specified as detailed in the section titled "Argument Specification"
+
+### ariadne test
+Tests a pipeline. It is invoked in the following form:
+
+```bash
+ariadne.py test <pipeline name> [args]
+```
+
+### araidne benchmark
+Benchmarks a pipeline. By default, ariadne can provide timing information (ie. how long it takes for the pipeline to execute). All other benchmarking modes are, for now, to be implemented per-plugin. It is invoked in the following form:
+
+```bash
+ariadne.py benchmark <pipeline name> [args]
+```
+
+### ariadne plugins
+Lists all of the plugins installed by ariadne's default configuration. It is invoked in the following form:
+
+```bash
+ariadne.py plugins
+```
 
 ## Tutorials
 This section contains a few tutorials that can help you familiarize yourself with ariadne and its behavior. 
@@ -523,3 +562,16 @@ List of attributes:
 It shouldn't be neccessary in normal use to directly use the above attributes. Instead, they should be specified with the DependencyContainer class' constructor:
 
 `__init__(self, depname, args)`
+
+## Argument Specification
+In order to support a wide range of use cases, arguments passed to various ariadne functions on the command line are broken up and converted into a dictionary. As such, they are to be specified as follows:
+
+
+`key_name=value`
+
+
+For example, a pipeline that writes data to a certain directory could be invoked like this:
+
+```bash
+ariadne.py pipeline run testpipe outdir=/path/to/my/directory
+```

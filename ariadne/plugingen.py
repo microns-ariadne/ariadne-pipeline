@@ -197,7 +197,7 @@ def gentest(pl, f, wrappername, plugindir, exectype, existingargs):
     """Generates a luigi wrapper that can do internal testing."""
 
     # Generate a checkpoint filename:
-    ckpf="%s%d.chkpt" % (wrappername, int(round(random.random()*1000000))
+    ckpf="%s%d.chkpt" % (wrappername, int(round(random.random()*1000000)))
 
     # Generate a command to generate the checkpoint:
     chkgencmd="os.system('touch %s')" % ckpf
@@ -210,6 +210,9 @@ def gentest(pl, f, wrappername, plugindir, exectype, existingargs):
 
     # Now write the complete() method:
     f.write("   def complete(self):\n")
+    # Destroys 
+    f.write("       if os.path.isfile('%s'):\n" % ckpf)
+    f.write("           os.system('rm %s')\n" % chkpf)
     f.write("       return not 0xFF00 & os.system('ariadne.py testplugin %s " % (wrappername)) 
     for e in existingargs:
         f.write(" %s" % e)

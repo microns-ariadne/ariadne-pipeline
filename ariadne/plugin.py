@@ -96,10 +96,14 @@ def get_dataset_real_list(dataset_filename):
     tmpdir=config_dict['tmpdir'][0]
     real_list=[]
     ds_toks=deftools.parse(dataset_filename)
+
+    if ds_toks==[] or ds_toks==None:
+        return []
     
     data_list=deftools.search(ds_toks, "urls")
     for d in data_list:
         real_list.append(tools.get_url_filename(d))
+    return real_list
 
 
 class ArgException(Exception):

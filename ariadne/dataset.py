@@ -26,7 +26,7 @@ def fetchunpack_dataset(dataset_name, dataset_destination=""):
     if not tools.file_exists(fullpath):
         print("ERROR: Dataset "+dataset_name+" does not exist either in ./ or %s." 
                 % tools.get_default_dataset_dir())
-        return
+        return None
     dataset_contents = deftools.parse_file(dataset_filename)
     dataset_type = deftools.search(dataset_contents, "type")[0]
     if len(dataset_type) == 0:
@@ -37,7 +37,7 @@ def fetchunpack_dataset(dataset_name, dataset_destination=""):
 
     if dataset_handler==None:
         print("Could not find a plugin to handle dataset type: %s" % dataset_type)
-        return
+        return None
 
     h=dataset_handler(dataset_filename)
 

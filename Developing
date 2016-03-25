@@ -21,8 +21,15 @@ Table of Contents:
     3.1 - List of implemented blocks
     3.2 - Example definition file
 4 - Dataset Definition Files
-    4.1 - Datset example
-5 - 
+    4.1 - Dataset example
+5 - The tools module
+    5.1 - List of functions
+6 - The plugin module
+    6.1 - List of functions
+    6.2 - List of global data structures
+7 - The dataset module
+    7.1 - List of functions
+8 - Future development directions
 
 1 - Introduction to Pipelines
 
@@ -51,7 +58,9 @@ implemented for several reasons:
 * There was development work in implementing a process scheduling/management
     framework for ariadne. Overall, it offered fewer features than luigi and
     ultimately reinvented the wheel.
+
 * Luigi can schedule tasks to run remotely.
+
 * This model will ultimately be more useful for continuous pipeline execution.
 
 2 - Introduction to Plugins and the Plugin API
@@ -66,11 +75,15 @@ development.
 The following base classes are exposed by ariadne at the time of this writing:
 
 * plugin.Plugin - Obsolete base plugin class.
+
 * plugin.DatasetPlugin - Plugin with special methods for dataset retrieval and
     management.
+
 * plugin.ArchivePlugin - Plugin with special methods for archive packing, 
     unpacking, etc.
+
 * plugin.AriadneOp - Base class for generic plugins.
+
 * plugin.AriadneMLOp - Extension of AriadneOp with machine learning-specific
     features.
 
@@ -81,11 +94,16 @@ releases, it is still often useful when doing extremely basic plugin tasks.
 
 List of plugin methods:
 * run() - Called to run the plugin
+
 * depends() - Returns a list of DependencyContainers specifying all plugin 
     dependencies.
+
 * benchmark() - Called to perform a benchmark.
+
 * test() -- Called to perform a test.
+
 * print_benchmark() - Called to print benchmark results (NOTE: unused)
+
 * __init__(args, conffile, conftoks) - Constructor for the plugin. Is currently
     called with blank or None values for all constructor parameters.
 
@@ -100,16 +118,22 @@ method with one that can parse and set the class' data_list attribute.
 List of plugin methods:
 * can_handle(dataset_type) - Returns 1 if the plugin can handle the specified
     dataset type string.
+
 * validate() -- Returns 1 if the dataset was correctly fetched and unpacked.
-* fetch(destination) - Fetches a datset and puts it in the destination listed.
-* unpack(destination) - Unpacks the datset and stores its contents in
+
+* fetch(destination) - Fetches a dataset and puts it in the destination listed.
+
+* unpack(destination) - Unpacks the dataset and stores its contents in
     destination.
+
 * get_file_list(destination) - Returns a list of all files in the dataset. 
     This method is likely to be depreciated, as its functionality is replicated
     in the dataset module.
+
 * get_file(destination, name, mode) - Returns a file handle to the specified
     file with the specified mode. This allows users to be abstracted from 
     dataset internals and implementation details.
+
 * __init__(def_filename, def_tokens) - Constructor. 
 
 2.4 - plugin.ArchivePlugin
@@ -125,6 +149,7 @@ the leading period on the extension.
 List of plugin methods:
 * can_handle(extension) - Returns 1 if the plugin can handle archives with the 
     provided extension.
+
 * unpack(file_name, destination) - Unpacks the file referred to by file_name
     in the provided directory.
 
@@ -134,9 +159,13 @@ This class is effectively a continuation of the original plugin.Plugin class.
 
 List of plugin methods:
 * run(arg_dict) - Runs the plugin with the given argument dictionary.
+
 * files_modified() - Returns a list of all files modified by the plugin.
+
 * get_arg_names() - Returns a list of all indices used by run(arg_dict)
+
 * depends() - Returns a list of DependencyContainers needed to run the plugin.
+
 * test() - Executes any nose tests imported or defined by the plugin.
 
 2.6 - plugin.AriadneMLOp
@@ -147,10 +176,13 @@ specific pipeline tasks.
 List of plugin methods added by AriadneMLOp:
 * benchmark(arg_dict) - Performs a benchmarking operation (specific benchmarks
     are to be defined per use case) given the provided set of arguments.
+
 * get_train_arg_names() - Returns a list of argument names used by the 
     train(args) method.
+
 * train(args) - performs training operations given an argument dictionary 
     equivalent to that of the run(args) method.
+
 * train_depends() - Returns a list of DependencyContainers specific to the
     train(args) method.
 
@@ -162,8 +194,10 @@ each plugin when it is loaded.
 Assumptions made:
 1. That each plugin module contains an attribute named "plugin_class" containing
     the name of the class to load. 
+
 2. That each plugin class has an attribute named "name" that contains the name 
     by which that plugin can be identified.
+
 3. That each entry in any given directory's plugin list file is in that 
     directory.
 
@@ -178,7 +212,9 @@ All of the blocks listed below are used by ariadne. All other top level blocks
 are ignored and may contain comments or other information.
 
 * stages - Defines a list of blocks containing all of the stages to execute.
+
 * environment - Defines the environment in which the pipeline is to be run.
+
 * plugindir - Lists all directories containing additional plugins used by
     the pipeline. 
 
@@ -221,4 +257,173 @@ this section will contain an example with all attributes in context.
     description:
         A training dataset example.
 
+5 - The tools module
 
+Any functions, methods, or classes that are generally useful for a number of
+ariadne operations are implemented in the tools module. This section will
+provide a general overview of the functions and capabilities provided.
+
+5.1 - List of functions
+
+* get_extension(name) - Returns the extension for a given filename.
+
+* get_url_filename(url) - Attempts to get the file any given URL is pointing to.
+    Example: http://my.site/file.txt -> file.txt
+
+* get_url_extension(url) - Attempts to get the file extension for a given URL.
+    Example: http://my.site/file.txt -> .txt
+
+* file_exists(filename, [extensions]) - Returns 1 if the specified file or
+    the specified file with any of the list of extensions appended exists.
+* get_base_dir() - Gets ariadne's install path.
+
+* get_default_dataset_dir() - Returns the default directory in which ariadne
+    will search for dataset definition files.
+
+* get_default_config_file() - Returns a path to the default configuration file.
+
+* get_default_conf_toks() - Generates a list of default tokens used to 
+    automatically generate a configuration file if there isn't one already.
+
+* prep_default_config_file(conffile) - Creates a default directory structure
+    and writes a default configuration to the file name given.
+
+* init_plugins([dir]) - Either initializes all plugins in the default plugins
+    directory or the directory specified.
+
+* getenv(var_name) - Attempts to return the environment variable specified.
+
+* setenv(var_name, value) - Attempts to set an environment variable to the
+    value specified. Assumes that the value given is a string.
+
+* get_dir_delta(beforelisting, afterlisting) - While this is specifically 
+    intended for directory listings, this function computes a list of 
+    differences between two lists. The return value is a list of tuples
+    in the form (added/removed, value). If a list value was added, the first
+    entry in the tuple will be 1. If it is the same, the first entry in the 
+    tuple will be 0. If it has been removed, the first entry in the tuple
+    will be -1.
+
+    Given ['a', 'b'] and ['b', 'c'], this function should return 
+        [(-1, 'a'), (0, 'b'), (1, 'c')]
+
+6 - The plugin module
+
+The plugin module contains methods and functions related to searching for, 
+loading, and running plugins. Please note that because (more or less) all of
+the classes contained in this module have been described in other documentation,
+only functions, definitions, and global data structures will be detailed here.
+
+6.1 - List of functions
+
+* load_plugin(module_name) - Attempts to load a plugin with the given module
+    name. This module must exist in python's path (load_plugins() updates the 
+    path for you). 
+
+* load_plugins(list_file, base_dir) - Loads all plugins listed in the given
+    file from the provided directory.
+
+* get_plugins(plugin_type) - Returns all plugins of the specified type. This
+    type is determined at load time by each plugin's list entry.
+
+* search_plugins(plugin_name) - Returns the first plugin class with the 
+    specified name.
+
+* get_can_handle(ext) - Returns the first plugin that can handle the specified
+    extension or type string.
+
+* set_config(conf_dict) - Updates the global configuration dictionary to the
+    specified value.
+
+* get_temp_filename(filename) - Mangles the specified filename and appends 
+    a directory so that it may be created and used.
+
+* get_dataset_real_list(dataset_filename) - Returns all scanned URL filenames
+    in the given dataset definition file.
+
+6.2 - List of global data structures
+
+* config_dict - Global configuration dictionary. This contains a set of keys
+    related to a number aspects of ariadne's operation ranging from default
+    behavior to storage directories.
+
+* plugin_list - A list of plugin entries. Each plugin entry is a list in the 
+    following form: [plugin class, plugin type string.]
+
+* PLUGIN_TYPE_ARCHIVE - A string denoting the default archive plugin class.
+    This and other such attributes will eventually be depreciated and removed.
+
+* PLUGIN_TYPE_GENERIC - A string denoting the default generic plugin class
+    Instead of AriadneOp, it is currently set to Plugin.
+
+* PLUGIN_TYPE_DATASET - A string denoting the default dataset plugin class.
+
+* PLUGIN_TYPE_VALIDATION - An unused string containing the name of a class
+    that may be implemented to handle common validation tasks.
+
+* PLUGIN_TYPE_EXECUTOR - An unused string containing the name of a class
+    that handled pipeline execution. This has been functionally replaced with
+    the current luigi execution model.
+
+7 - The dataset module
+
+The dataset module was initially created in order to consolidate dataset 
+functionality for plugin developers (given that they are using ariadne to manage
+datasets rather than some other library). As such, it contains a number of
+functions that should automate the task of searching for appropriate dataset
+plugins, fetching datasets, unpacking them, and getting appropriate file 
+handles.
+
+7.1 - List of functions
+
+* fetchunpack_dataset(dataset_name, [destination]) - Fetches and unpacks the 
+    specified dataset (if if can be found) in either the specified location or a
+    default dataset storage directory. Returns either None or the dataset's
+    final destination.
+
+* check_dataset_fetched(datasetname, [destination]) - Checks whether the dataset
+    specified has been fetched. Returns 1 if it has, 0 if it has not.
+
+* get_dataset_files(dataset_name, dataset_dir) - Returns a list of all of the 
+    files fetched and unpacked from a given dataset.
+
+* get_dataset_plugin(datasetname) - Returns an appropriate dataset plugin for the
+    given dataset name (if it can be found). Returns None if this is not 
+    possible.
+
+8 - Future development directions
+
+As of the time of this writing, ariadne is mostly feature complete. In the 
+future, however, a number of changes should be implemented to ensure that
+ariadne can be as useful as possible to machine learning researchers.
+
+General tasks:
+* A consolidation and overhaul of the plugin system. - There is 
+    currently quite a bit of unused code and cruft in the plugin system. 
+    This includes features like the generic plugin (plugin.Plugin), explicit
+    plugin types in plugin list files, and the fact that plugin list files
+    even exist. More error correction and checking would be useful.
+
+* Enabling ariadne to run on remote servers. - To implement this, developers
+    will have to either drop support for environment variables in pipelines
+    or implement an extremely simple RPC setup in which ariadne can act as a
+    remote parent process to luigi instances.
+
+* Changing ariadne's definition file formats to something standard 
+    (like XML, etc). Not necessary but may be a "nice to have."
+
+Important new features:
+* Support for continuous pipeline execution. This may require a significant
+    redesign of how ariadne plugins handle file processing and IO. 
+    Alternatively, ariadne could be scheduled either through cron jobs or
+    specific triggering events. 
+
+* Support for automatic IO scanning. Because luigi modules are currently
+    statically generated, ariadne currently does not automatically schedule
+    dependencies for luigi-ification unless they can provide a static list of
+    files they modify. This has a number of performance drawbacks.
+
+* Support for file coherence/better dataset integration/networked filesystems.
+    Currently, it would be very difficult to coordinate ariadne jobs across 
+    different servers if certain resources are only available on a limited
+    number of them.

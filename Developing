@@ -1,0 +1,224 @@
+--A Developer's Guide to Ariadne--
+
+Why read this?
+
+If you are interested in contributing new features to ariadne or just want to 
+make the most of your plugins, you should read this document.
+
+Table of Contents:
+1 - Introduction to Pipelines
+    1.1 - How they are executed
+    1.2 - Why this execution model?
+2 - Introduction to Plugins and the Plugin API
+    2.1 - Plugin class overview
+    2.2 - plugin.Plugin
+    2.3 - plugin.DatasetPlugin
+    2.4 - plugin.ArchivePlugin
+    2.5 - plugin.AriadneOp
+    2.6 - plugin.AriadneMLOp
+    2.7 - Plugin definition notes
+3 - Pipeline Definition Files
+    3.1 - List of implemented blocks
+    3.2 - Example definition file
+4 - Dataset Definition Files
+    4.1 - Datset example
+5 - 
+
+1 - Introduction to Pipelines
+
+Pipelines form the most important level of execution to ariadne. They define 
+both how a pipeline is to be run (ie. by which methods and through which
+plugins) and in what environment it is to be run. Fundamentally, a pipeline is
+merely a list of plugins, each with their own dependencies, tests, and
+benchmarks.
+
+1.1 - How they are executed
+
+Internally, ariadne starts by building a dictionary of arguments passed on the
+command line. It then proceeds to find a pipeline definition file with the
+specified name, parse it, and build an object (of type Pipeline). From there,
+it calls that object's run() method, which compiles the pipeline to a series
+of luigi modules (see plugingen), then finally executes luigi in sequence on 
+all of the generated modules. Finally, luigi builds a dependency graph and
+executes the generated modules, which are, in turn, wrappers for calls back to
+ariadne to execute the plugins in the pipeline in the correct order.
+
+1.2 - Why this execution model?
+
+While this method of executing each pipeline may seem complex, it was 
+implemented for several reasons:
+
+* There was development work in implementing a process scheduling/management
+    framework for ariadne. Overall, it offered fewer features than luigi and
+    ultimately reinvented the wheel.
+* Luigi can schedule tasks to run remotely.
+* This model will ultimately be more useful for continuous pipeline execution.
+
+2 - Introduction to Plugins and the Plugin API
+
+The fundamental unit of execution of ariadne is the plugin. Each plugin is a 
+python module containing a class (with some specific markup) that provides
+additional behavior that could not have been foreseen during ariadne's 
+development.
+
+2.1 - Plugin class overview
+
+The following base classes are exposed by ariadne at the time of this writing:
+
+* plugin.Plugin - Obsolete base plugin class.
+* plugin.DatasetPlugin - Plugin with special methods for dataset retrieval and
+    management.
+* plugin.ArchivePlugin - Plugin with special methods for archive packing, 
+    unpacking, etc.
+* plugin.AriadneOp - Base class for generic plugins.
+* plugin.AriadneMLOp - Extension of AriadneOp with machine learning-specific
+    features.
+
+2.2 - plugin.Plugin
+
+Although this class is mostly unused and will likely be depreciated in future
+releases, it is still often useful when doing extremely basic plugin tasks.
+
+List of plugin methods:
+* run() - Called to run the plugin
+* depends() - Returns a list of DependencyContainers specifying all plugin 
+    dependencies.
+* benchmark() - Called to perform a benchmark.
+* test() -- Called to perform a test.
+* print_benchmark() - Called to print benchmark results (NOTE: unused)
+* __init__(args, conffile, conftoks) - Constructor for the plugin. Is currently
+    called with blank or None values for all constructor parameters.
+
+2.3 - plugin.DatasetPlugin
+
+Because datasets are generally fetched and unpacked in the same way, much of the
+boilerplate for automatically downloading and unpacking datasets is already 
+implemented by this plugin. All that is necessary to take advantage of this
+existing implementation is to override the __init__(def_filename, def_tokens)
+method with one that can parse and set the class' data_list attribute. 
+
+List of plugin methods:
+* can_handle(dataset_type) - Returns 1 if the plugin can handle the specified
+    dataset type string.
+* validate() -- Returns 1 if the dataset was correctly fetched and unpacked.
+* fetch(destination) - Fetches a datset and puts it in the destination listed.
+* unpack(destination) - Unpacks the datset and stores its contents in
+    destination.
+* get_file_list(destination) - Returns a list of all files in the dataset. 
+    This method is likely to be depreciated, as its functionality is replicated
+    in the dataset module.
+* get_file(destination, name, mode) - Returns a file handle to the specified
+    file with the specified mode. This allows users to be abstracted from 
+    dataset internals and implementation details.
+* __init__(def_filename, def_tokens) - Constructor. 
+
+2.4 - plugin.ArchivePlugin
+
+In order to support a wide range of archive types, ariadne allows for archive
+utilities to be wrapped in the form of ArchivePlugins.
+
+Note on archive types:
+Ariadne specifies archive types by extension. For example, an archive named
+"myarchive.tar.gz" would be represented as ".tar.gz". Note that this includes
+the leading period on the extension.
+
+List of plugin methods:
+* can_handle(extension) - Returns 1 if the plugin can handle archives with the 
+    provided extension.
+* unpack(file_name, destination) - Unpacks the file referred to by file_name
+    in the provided directory.
+
+2.5 - plugin.AriadneOp
+
+This class is effectively a continuation of the original plugin.Plugin class.
+
+List of plugin methods:
+* run(arg_dict) - Runs the plugin with the given argument dictionary.
+* files_modified() - Returns a list of all files modified by the plugin.
+* get_arg_names() - Returns a list of all indices used by run(arg_dict)
+* depends() - Returns a list of DependencyContainers needed to run the plugin.
+* test() - Executes any nose tests imported or defined by the plugin.
+
+2.6 - plugin.AriadneMLOp
+
+AriadneMLOp is an extension of AriadneOp created to handle machine learning 
+specific pipeline tasks.
+
+List of plugin methods added by AriadneMLOp:
+* benchmark(arg_dict) - Performs a benchmarking operation (specific benchmarks
+    are to be defined per use case) given the provided set of arguments.
+* get_train_arg_names() - Returns a list of argument names used by the 
+    train(args) method.
+* train(args) - performs training operations given an argument dictionary 
+    equivalent to that of the run(args) method.
+* train_depends() - Returns a list of DependencyContainers specific to the
+    train(args) method.
+
+2.7 - Plugin definition notes
+
+In order to do its job, ariadne's plugin loader makes a few assumptions about
+each plugin when it is loaded. 
+
+Assumptions made:
+1. That each plugin module contains an attribute named "plugin_class" containing
+    the name of the class to load. 
+2. That each plugin class has an attribute named "name" that contains the name 
+    by which that plugin can be identified.
+3. That each entry in any given directory's plugin list file is in that 
+    directory.
+
+3 - Pipeline definition files
+
+Each pipeline is defined in a number of blocks that can be searched and 
+converted into dictionaries using standard deftools functions. 
+
+3.1 - List of implemented blocks
+
+All of the blocks listed below are used by ariadne. All other top level blocks 
+are ignored and may contain comments or other information.
+
+* stages - Defines a list of blocks containing all of the stages to execute.
+* environment - Defines the environment in which the pipeline is to be run.
+* plugindir - Lists all directories containing additional plugins used by
+    the pipeline. 
+
+3.2 - Example definition file
+
+    stages:
+        stage1:
+            plugin: stageplugin
+            runtype: run
+        end
+
+        stage2:
+            plugin: anotherplugin
+            runtype: train
+        end
+    end
+
+    environment:
+        FOO=bar
+    end
+
+    plugindir:
+        plugins
+    end
+
+4 - Dataset definition files
+
+Because dataset definition files are so simple from a structural perspective,
+this section will contain an example with all attributes in context.
+
+4.1 - Dataset example
+
+    name:
+        train-dataset
+    type:
+        dataset/hdf5
+    urls:
+        http://my.site/path/to/my/data.h5
+        http://my.site/path/to/my/otherdata.h5
+    description:
+        A training dataset example.
+
+

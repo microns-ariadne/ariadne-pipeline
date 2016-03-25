@@ -2,6 +2,7 @@
 
 import plugin
 import tools
+
 import os
 import sys
 import datetime
@@ -119,8 +120,11 @@ def gen(pl, f, wrappername, plugindir, exectype, existingargs, customoutputline=
         except:
             pass
 
+    if deplist!=None:
+        print("Number of dependencies: %d" % len(deplist))
+    else:
+        deplist=[]
 
-    print("Number of dependencies: %d" % len(deplist))
     depnum=0
 
     for d in deplist:

@@ -196,7 +196,7 @@ def run_pipeline(action, pipe_name, args, confdict):
 
 def run_test(pipe_name, test_filename, confdict):
     """Performs actions related to testing plugins and pipelines."""
-    if pipe_name=="" or test_filename=="":
+    if pipe_name==None or test_filename==None:
         print_test_usage()
         return
     
@@ -261,6 +261,7 @@ def run_plugin(runstr, plugin_name, plugin_dir, plugin_args, confdict):
             print("ERROR: Couldn't test plugin: %s" % plugin_name)
 
         exit(not retv)
+
 
 def main(argv):
     """Entry point and dispatcher for the ariadne cli."""

@@ -29,7 +29,11 @@ Table of Contents:
     6.2 - List of global data structures
 7 - The dataset module
     7.1 - List of functions
-8 - Future development directions
+8 - The ariadne module
+    8.1 - List of functions.
+9 - The pipeline module
+10 - The plugingen module
+11 - Future development directions
 
 1 - Introduction to Pipelines
 
@@ -391,7 +395,84 @@ handles.
     given dataset name (if it can be found). Returns None if this is not 
     possible.
 
-8 - Future development directions
+8 - The ariadne module
+
+This module contains all of the main execution logic for ariadne's CLI. As such,
+its functions are not likely to be useful for most implementation or 
+development tasks.
+
+8.1 - List of functions
+
+* print_usage() - Prints a usage statement showing all of ariadne's commands.
+
+* print_dataset_usage() - Prints a usage statement for ariadne's dataset command.
+
+* print_pipeline_usage() - Prints a usage statement for ariadne's pipeline 
+    command.
+
+* ..._usage() - Prints a usage statement for ... command.
+
+* build_arg_dict(arg_list) - Converts a list of arguments (as strings in the
+    form "name=value") into a dictionary suitable for use with plugins.
+
+* run_datset(action, dataset_name, confdict) - Performs actions related to 
+    dataset retrieval and management. 
+
+* run_pipeline(action, pipe_name, args, confdict) - Performs actions related
+    to pipeline execution and dependency resolution.
+
+* run_test(pipe_name, test_filename, confdict) - Tests pipelines.
+
+* run_benchmark(pipe_name, args, confdict) - Does what it says on the tin.
+
+* run_plugin(runstr, plugin_name, plugin_dir, plugin_args, confdict) - 
+    General execution command for plugins. Currently supports training, testing,
+    and normal execution.
+
+* main(argv) - What it says on the tin of most programming languages.
+
+9 - The pipeline module
+
+The pipeline module is comprised of one class definition that abstracts all 
+functionality related to running pipelines. 
+
+10 - The plugingen module
+
+This module exists to provide ariadne with the ability to automatically generate
+luigi modules given each plugin and its dependencies. 
+
+10.1 - Function list
+
+* genheader(f) - Writes a general plugin header to the given file handle.
+
+* gen_deps_inline(deplist, f, plugindir) - Writes inline dependencies
+    (dependencies that are executed serially in the run() method of a luigi
+    pipeline) to the given file handle.
+
+* write_dep_def(f, plugin, depnum, argdict, plugindir) - Writes a luigi
+    class for each dependency listed. This is only called when a plugin has
+    static file outputs (though this can be changed with a custom complete()
+    method).
+
+* parse_deps(pl, f, plugindir, args, depnum) - Recursively determines how each
+    dependency is to be run and writes all non-inline dependencies to the 
+    given file.
+
+* gen(pl, f, wrappername, plugindir, exectype, existingargs, [customoutputline,
+        customruncmd])
+    - Generates a luigi wrapper for a given plugin. If customoutputline or 
+    customcmd are set, gen can be used to generate testing, training, and
+    other luigi modules.
+
+*  gentest(pl, f, wrappername, plugindir, exectype, existingargs) - Generates
+    a luigi wrapper that tests a given plugin. Support for this function is
+    currently experimental, though it demonstrates use cases that may allow
+    all dependencies to be scheduled by luigi in the future (it generates
+    a custom complete() method, which luigi uses to determine if a dependency
+    has executed. Without this method, a luigi task must output a set of 
+    files, which ariadne currently cannot generate dynamically.)
+
+11 - Future development directions
 
 As of the time of this writing, ariadne is mostly feature complete. In the 
 future, however, a number of changes should be implemented to ensure that
@@ -411,6 +492,10 @@ General tasks:
 
 * Changing ariadne's definition file formats to something standard 
     (like XML, etc). Not necessary but may be a "nice to have."
+
+* Reorganizing modules in a coherent way.
+
+* PEP8 compliance (particularly with operators and line widths).
 
 Important new features:
 * Support for continuous pipeline execution. This may require a significant

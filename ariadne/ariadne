@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# This is a temporary version of ariadne as I change argument handling
 
 import sys
 import os
@@ -12,7 +11,6 @@ import argparse
 #from ariadne import argparse
 
 plugin=ariadne.plugin
-dataset=ariadne.dataset
 tools=ariadne.tools
 pipeline=ariadne.pipeline
 deftools=ariadne.deftools
@@ -64,9 +62,8 @@ def build_arg_dict(arg_list):
     """Builds a dictionary from an argument listing."""
     d={}
     for a in arg_list:
-        if a!=None:
-            toks=a.split('=')
-            d[toks[0]]=toks[1]
+        toks=a.split('=')
+        d[toks[0]]=toks[1]
     return d
 
 
@@ -105,9 +102,25 @@ def run_dataset(action, dataset_name, confdict):
     dataset_filename=fullpath
 
     if action=="fetch":
-        loc=dataset.fetchunpack_dataset(dataset_name, dataset_destination)
+        if not tools.file_exists(fullpath):
+            print("ERROR: Dataset "+dataset_name+" does not exist either in ./ or %s." 
+                    % tools.get_default_dataset_dir())
+            return
+        dataset_contents = deftools.parse_file(dataset_filename)
+        dataset_type = deftools.search(dataset_contents, "type")[0]
+        if len(dataset_type) == 0:
+            print("ERROR: Dataset has unspecified type. Cannot handle.")
+            exit(2)
 
-        print("Dataset unpacked to %s" % loc)
+        dataset_handler=plugin.get_can_handle(dataset_type)
+
+        if dataset_handler==None:
+            print("Could not find a plugin to handle dataset type: %s" % dataset_type)
+            return
+
+        h=dataset_handler(dataset_filename)
+        h.fetch(dataset_destination)
+        h.unpack(dataset_destination)
 
     elif action == "list":
         list_datasets(tools.get_default_dataset_dir())
@@ -128,32 +141,6 @@ def run_dataset(action, dataset_name, confdict):
             print("No plugin found to handle this type of dataset.")
         else:
             print("Handler plugin name: "+dataset_handler.name)
-
-        log_filename="%s/%s.log" % (dataset_destination, dataset_name)
-        if tools.file_exists(log_filename):
-            lf=open(log_filename, "r")
-            contents=lf.read()
-            lf.close()
-
-            lines=contents.splitlines()
-
-            print("Dataset transaction log:")
-            o=sys.stdout
-
-            for l in lines:
-                toks=l.split()
-
-                try:
-                    if toks[0]=="-1":
-                        o.write("\x1B[31;49;2m Removed: \x1B[39;49;0m")
-                    elif toks[0]=="1":
-                        o.write("\x1B[32;49;2m Added:   \x1B[39;49;0m")
-                    elif toks[0]=="0":
-                        o.write("Same:    ")
-
-                    o.write("%s\n" % toks[1])
-                except:
-                    pass
             
     else:
         print_dataset_usage()
@@ -196,13 +183,10 @@ def run_pipeline(action, pipe_name, args, confdict):
         p=pipeline.Pipeline(pipe_name+".pipeline")
         p.check_dependencies()
 
-    else:
-        print_pipeline_usage()
-
 
 def run_test(pipe_name, test_filename, confdict):
     """Performs actions related to testing plugins and pipelines."""
-    if pipe_name==None or test_filename==None:
+    if pipe_name=="" or test_filename=="":
         print_test_usage()
         return
     
@@ -229,7 +213,7 @@ def run_test(pipe_name, test_filename, confdict):
 
 def run_benchmark(pipe_name, args, confdict):
     """Performs actions related to benchmarking plugins and pipelines."""
-    if pipe_name=="" or pipe_name==None:
+    if pipe_name=="":
         print_benchmark_usage()
         return
     pipe_name=args[0]
@@ -267,7 +251,6 @@ def run_plugin(runstr, plugin_name, plugin_dir, plugin_args, confdict):
             print("ERROR: Couldn't test plugin: %s" % plugin_name)
 
         exit(not retv)
-
 
 def main(argv):
     """Entry point and dispatcher for the ariadne cli."""

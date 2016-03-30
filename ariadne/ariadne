@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# This is a temporary version of ariadne as I change argument handling
 
 import sys
 import os

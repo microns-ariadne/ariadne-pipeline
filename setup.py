@@ -17,11 +17,11 @@ for p in plugins:
 
 setup(
     name='ariadne-pipeline',
-    version='1.0a10',
+    version='1.0a11',
     description="Run, and manage machine learning pipelines.",
-    scripts=['scripts/ariadne', 'ariadne/shell2pipe.py', 'scripts/ariadne-download.sh'],
+    scripts=['scripts/ariadne', 'ariadne/ariadne_cli.py', 'ariadne/shell2pipe.py', 'scripts/ariadne-download.sh'],
     include_package_data=True,
     install_requires=['h5py', 'nose', 'luigi'],
-    packages=find_packages(exclude=['tests', 'scripts', 'bin', 'plugins']),
+    packages=['ariadne', 'plugins'],#find_packages(exclude=['tests', 'scripts', 'bin', 'plugins']),
     data_files=[('plugins', newpllist)], # Allow plugins to be copied verbatim.
     )

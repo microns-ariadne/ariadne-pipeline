@@ -1,6 +1,7 @@
 setup.py
 ariadne/__init__.py
-ariadne/ariadne.py
+ariadne/ariadne_cli.py
+ariadne/dataset.py
 ariadne/deftools.py
 ariadne/luigitools.py
 ariadne/pipeline.py
@@ -11,6 +12,12 @@ ariadne/tools.py
 ariadne_pipeline.egg-info/PKG-INFO
 ariadne_pipeline.egg-info/SOURCES.txt
 ariadne_pipeline.egg-info/dependency_links.txt
+ariadne_pipeline.egg-info/requires.txt
 ariadne_pipeline.egg-info/top_level.txt
+plugins/__init__.py
+plugins/hdf5dataset.py
+plugins/mkdir.py
+plugins/rawdataset.py
+plugins/targz.py
 scripts/ariadne
 scripts/ariadne-download.sh

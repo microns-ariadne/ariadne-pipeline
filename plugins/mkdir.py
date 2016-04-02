@@ -1,6 +1,6 @@
 # mkdir.py -- Generic ariadne plugin to make a directory.
 
-import plugin
+from ariadne import plugin
 import os
 import time
 

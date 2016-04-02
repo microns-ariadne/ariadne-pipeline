@@ -1,7 +1,7 @@
 # hdf5dataset.py -- A dummy HDF5 dataset handler.
-import tools
-import deftools
-import plugin
+from ariadne import tools
+from ariadne import deftools
+from ariadne import plugin
 import os
 
 plugin_class="hdf5dataset"

@@ -1,4 +1,4 @@
-import plugin
+from ariadne import plugin
 import deftools
 import os
 

@@ -3,6 +3,7 @@ import os
 import sys
 import deftools
 import plugin
+import plugins
 
 
 def get_extension(name):
@@ -115,7 +116,9 @@ def init_plugins(bdir=""):
     """
     filename=""
     if bdir=="":
-        filename=get_base_dir()+"/plugins/plugins.list"
+	sys.path.append(plugins.get_plugin_dir())
+        filename=plugins.get_plugin_dir()+"/plugins.list" #get_base_dir()+"/plugins/plugins.list
+        print("Base directory filename: %s" % filename)
     else:
         sys.path.append(bdir)
         filename=bdir+"/plugins.list"

@@ -1,5 +1,5 @@
 from ariadne import plugin
-import deftools
+from ariadne import deftools
 import os
 
 plugin_class="rawdataset"

@@ -5,6 +5,8 @@ import sys
 import os
 import ariadne
 import argparse
+# Import the plugins module to ensure that we can actually load plugins:
+import plugins 
 from ariadne import plugin
 from ariadne import tools
 from ariadne import pipeline

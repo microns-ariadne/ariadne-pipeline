@@ -4,6 +4,7 @@ import sys
 import deftools
 import plugin
 import plugins
+import examples
 
 
 def get_extension(name):
@@ -79,7 +80,8 @@ def get_base_dir():
 
 def get_default_dataset_dir():
     """Returns the default directory in which to search for dataset files."""
-    return get_base_dir()+"/examples"
+    return examples.get_examples_dir()
+    #return get_base_dir()+"/examples"
 
 
 def get_default_config_file():
@@ -118,7 +120,7 @@ def init_plugins(bdir=""):
     if bdir=="":
 	sys.path.append(plugins.get_plugin_dir())
         filename=plugins.get_plugin_dir()+"/plugins.list" #get_base_dir()+"/plugins/plugins.list
-        print("Base directory filename: %s" % filename)
+        #print("Base directory filename: %s" % filename)
     else:
         sys.path.append(bdir)
         filename=bdir+"/plugins.list"

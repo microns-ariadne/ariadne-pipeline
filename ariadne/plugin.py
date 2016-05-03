@@ -4,7 +4,7 @@ import os
 import sys
 import tools
 import nose
-
+import scripts
 
 PLUGIN_TYPE_ARCHIVE="ArchivePlugin"
 PLUGIN_TYPE_GENERIC="Plugin"
@@ -188,7 +188,8 @@ class DatasetPlugin:
         """Fetches a dataset and stores it in the destination specified."""
         basedir=tools.get_base_dir()
         for d in self.data_list:
-            os.system(basedir+"/scripts/ariadne-fetch.sh "+d+" "+destination)
+            print("Running %s" % scripts.get_script_dir()+"/ariadne-fetch.sh")
+            os.system(scripts.get_script_dir()+"/ariadne-fetch.sh "+d+" "+destination)
             return 1
 
 

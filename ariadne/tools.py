@@ -100,15 +100,25 @@ def get_default_conf_toks():
     return conf_toks
 
 
+def check_create_default_dirs():
+    """Checks for and creates a default directory structure for ariadne."""
+    usrbase=os.path.expanduser('~')
+
+    if not os.path.isdir(usrbase+'/ariadne'):
+        os.mkdir(usrbase+'/ariadne')
+
+    if not os.path.isdir(usrbase+'/ariadne/tmp'):
+        os.mkdir(usrbase+'/ariadne/tmp')
+
+    if not os.path.isdir(usrbase+'/ariadne/data'):
+        os.mkdir(usrbase+'/ariadne/data')
+
+
 def prep_default_config_file(conffile):
     """Creates an ariadne directory structure and writes a default configuration file."""
     usrbase=os.path.expanduser('~')
-    try:
-        os.mkdir(usrbase+'/ariadne')
-        os.mkdir(usrbase+'/ariadne/tmp')
-        os.mkdir(usrbase+'/ariadne/data')
-    except OSError: # Then the files likely exist.
-        pass
+    check_create_default_dirs()
+
     deftools.write_file(get_default_conf_toks(), conffile)
 
 

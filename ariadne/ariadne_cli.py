@@ -11,6 +11,7 @@ from ariadne import plugin
 from ariadne import tools
 from ariadne import pipeline
 from ariadne import deftools
+from ariadne import dataset
 import argparse
 
 # ariadne.py -- command line interface for ariadne.
@@ -291,6 +292,9 @@ def main(argv):
 
     confdict=deftools.make_dict(conftoks)
     plugin.set_config(confdict)
+
+    # Determine if the rest of the default directory structure exists.
+    tools.check_create_default_dirs()
 
     # Load any plugins specified in the configuration:
     try:

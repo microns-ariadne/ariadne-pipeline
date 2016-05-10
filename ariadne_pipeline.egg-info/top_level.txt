@@ -1,3 +1,0 @@
-ariadne
-examples
-plugins

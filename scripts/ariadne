@@ -1,7 +1,0 @@
-#!/usr/bin/env python
-# This is effectively a loader stub for ariadne.
-import os
-import sys
-
-if __name__=="__main__":
-    os.execvp("ariadne_cli.py", sys.argv)

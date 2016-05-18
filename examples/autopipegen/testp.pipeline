@@ -1,7 +1,0 @@
-stages:
-	mkdir1
-	touch1
-	cp1
-environment:
-plugindir:
-	testp

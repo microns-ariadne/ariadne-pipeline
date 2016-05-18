@@ -1,110 +1,67 @@
-# dataset.py -- Tools for plugins that require dataset integration.
 import os
-import tools
-import plugin
-import deftools
+import luigi
+import requests
+import logging
+from ariadne import static
+from ariadne import utils
+from ariadne import exceptions
+from ariadne.common.command import Command
+
+class StreamBaseTask(luigi.Task):
+    dataset = luigi.Parameter()
+    filename = luigi.Parameter()
+
+    def output(self):
+        return luigi.LocalTarget(os.path.join(static.ARIADNE_DATA_DIR,
+                                              'raw_%s' % self.filename))
 
 
-
-def fetchunpack_dataset(dataset_name, dataset_destination=""):
-    if dataset_destination=="":
-        dataset_destination=tools.get_default_dataset_dir()+"/"+dataset_name
-        try:
-            os.mkdir(dataset_destination)
-        except:
-            # Check if there's a more serious error:
-            if not os.path.isdir(dataset_destination):
-                raise OSError
-
-    # Determine where, exactly, this dataset is:
-    fullpath="%s/%s.dataset" % (tools.get_default_dataset_dir(), dataset_name)
-    if not tools.file_exists(fullpath):
-        fullpath="./%s.dataset" % dataset_name
-
-    dataset_filename=fullpath
-
-    if not tools.file_exists(fullpath):
-        print("ERROR: Dataset "+dataset_name+" does not exist either in ./ or %s." 
-                % tools.get_default_dataset_dir())
-        return None
-    dataset_contents = deftools.parse_file(dataset_filename)
-    dataset_type = deftools.search(dataset_contents, "type")[0]
-    if len(dataset_type) == 0:
-        print("ERROR: Dataset has unspecified type. Cannot handle.")
-        exit(2)
-
-    dataset_handler=plugin.get_can_handle(dataset_type)
-
-    if dataset_handler==None:
-        print("Could not find a plugin to handle dataset type: %s" % dataset_type)
-        return None
-
-    h=dataset_handler(dataset_filename)
-
-    pre=os.listdir(dataset_destination)
-    h.fetch(dataset_destination)    
-    h.unpack(dataset_destination)
-    post=os.listdir(dataset_destination)
-
-    deltas=tools.get_dir_delta(pre, post)
-
-    f=open("%s/%s.log" % (dataset_destination, dataset_name), "w")
-
-    for d in deltas:
-        f.write("%d %s\n" % (d[0], d[1]))
-
-    f.close()
-
-    return dataset_destination
-
-    
-def check_datset_fetched(datasetname, dest=""):
-    if dest=="":
-        dest=tools.get_default_dataset_dir()+"/"+dataset_name
-        if not os.path.isdir(dest):
-            return 0
-
-    return tools.file_exists("%s/%s.log" % (dest, datasetname))
+class StreamURLTask(StreamBaseTask):
+    def run(self):
+        req = requests.get(self.dataset, stream=True)
+        if req.status_code == 200:
+            with self.output().open('wb') as out_file:
+                for chunk in req:
+                    out_file.write(chunk)
+        else:
+            raise exceptions.UnknownDataset(self.dataset)
 
 
-def get_dataset_files(dataset_name, dataset_dir):
-    """Gets a listing of all of the files in a dataset.
-       Assumes that the dataset exists and has been fetched."""
-
-    if not tools.file_exists(dataset_dir+"/%s.log" % dataset_name):
-        print("ERROR: Dataset transaction log does not exist. Returning directory listing...")
-        return os.listdir(dataset_dir)
-
-    f=open(dataset_dir+"/%s.log" % dataset_name, "r")
-    contents=f.read()
-    f.close()
-    
-    lines=contents.splitlines()
-    flist=[]
-
-    for l in lines:
-        toks=lines.split()
-
-        try:
-            flist.append(toks[1])
-        except:
-            pass
-
-    return flist
+class StreamLocalTask(StreamBaseTask):
+    def run(self):
+        source = os.path.abspath(self.dataset)
+        with self.output().open('wb') as out_file:
+            with open(source, 'rb') as chunk:
+                out_file.write(chunk.read())
 
 
-def get_dataset_plugin(datasetname):
-    fullpath="./%s.dataset" % datasetname
+class FetchTask(luigi.Task):
+    dataset = luigi.Parameter()
 
-    if not tools.file_exists(fullpath):
-        fullpath="%s/%s.dataset" % (tools.get_default_dataest_dir(), datasetname)
+    def run(self):
+        if utils.is_url(self.dataset):
+            filename = self.dataset.split('/')
+            filename = filename[-1]
+            yield StreamURLTask(dataset=self.dataset, filename=filename)
+        else:
+            filename = os.path.basename(self.dataset)
+            yield StreamLocalTask(dataset=self.dataset, filename=filename)
 
-    if not tools.file_exists(fullpath):
-        print("ERROR: Dataset definition file for %s not found." % datasetname)
-        return None
 
-    toks=deftools.parse_file(fullpath)
+class FetchCommand(Command):
 
-    typetok=deftools.search(toks, "type")[0]
+    def get_parser(self, prog_name):
+        parser = super(FetchCommand, self).get_parser(prog_name)
+        parser.add_argument(
+            "source",
+            help="Source file"
+        )
+        return parser
 
-    return plugin.get_can_handle(typetok)
+    def take_action(self, parsed_args):
+        self.log.info('Starting Fetch')
+        self.log.debug('Debug mode')
+        print(parsed_args.source)
+        output = luigi.build([FetchTask(dataset=parsed_args.source)],
+                            local_scheduler=True)
+        self.log.debug(output)

@@ -1,32 +1,37 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-""" distribute- and pip-enabled setup.py for ariadne-pipeline """
-
-#from distribute_setup import use_setuptools
-#use_setuptools()
-from setuptools import setup, Extension, find_packages
 import os
-import sys
+from setuptools import setup, find_packages
 
-plugins=os.listdir("plugins/")
-newpllist=[]
 
-for p in plugins:
-    newpllist.append("plugins/%s" % p)
+VERSION = 0.1
+
+
+README = open('README.md').read()
+
 
 setup(
     name='ariadne-pipeline',
-    version='1.0a12',
-    description="Run, and manage machine learning pipelines.",
-    scripts=['scripts/ariadne', 'ariadne/ariadne_cli.py', 'ariadne/shell2pipe.py', 'scripts/ariadne-download.sh'],
-    include_package_data=True,
+    version=VERSION,
+    author='Daniel Kelleher',
+    author_email='dkelleher@g.harvard.edu',
+    url = 'https://github.com/microns-ariadne/ariadne-pipeline',
+    description='Run, and manage machine learning pipelines.',
+    long_description=README,
     install_requires=[
         'h5py>=2.6.0',
         'nose>=1.3.7',
-        'luigi>=2.1.1'
+        'luigi>=2.1.1',
+        'cliff>=2.0.0',
+        'requests>=2.10.0'
     ],
-    packages=['ariadne', 'plugins', 'examples'],#find_packages(exclude=['tests', 'scripts', 'bin', 'plugins']),
-    #data_files=[('plugins', )], # Allow plugins to be copied verbatim.
-    package_data={"plugins":["*.list"]},
-    )
+    packages=['ariadne', 'plugins', 'examples'],
+    entry_points={
+        'console_scripts': [
+            'ariadne = ariadne.cli:main'
+        ],
+        'ariadne.clisub.base': [
+            'dataset fetch = ariadne.dataset:FetchCommand',
+        ]
+    },
+    zip_safe=False
+)

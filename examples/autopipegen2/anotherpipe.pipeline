@@ -1,7 +1,0 @@
-stages:
-	mkdirs
-	touchstuff
-	cpstuff
-environment:
-plugindir:
-	plugins/

@@ -97,7 +97,8 @@ class Pipeline:
                 if stageinfo.plugin_name==None or stageinfo.plugin_name=="":
                     print "It appears that no plugin was defined for the current stage."
                     print "stagename:"
-                    print "    
+                    print "    plugin: yourplugin"
+                    print "    runtype: run"
                 raise Exception
             else:
                 self.__gen_depends(f, pclass(), stageinfo.exectype, stageinfo.args)

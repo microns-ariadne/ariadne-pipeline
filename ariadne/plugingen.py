@@ -170,6 +170,7 @@ def gen(pl, f, wrappername, plugindir, exectype, existingargs, customoutputline=
     gen_deps_inline(inlinedeplist, f, plugindir)
     if customruncmd!="":
         f.write("       %s\n" % customruncmd)
+
     f.write("       os.system('ariadne.py %splugin %s %s" % (exectype, wrappername, plugindir))
 
     for e in existingargs:

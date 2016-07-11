@@ -83,7 +83,7 @@ def parse_deps(pl, f, plugindir, args, depnum):
                 # for inline execution:
                 dep=dclass()
 
-                (a, b, c)=parse_deps(ddep, f, plugindir, d.arg_dict, depnum)
+                (a, b, c)=parse_deps(dep, f, plugindir, d.arg_dict, depnum)
                 classlist.extend(a)
                 inlinelist.extend(b)
 

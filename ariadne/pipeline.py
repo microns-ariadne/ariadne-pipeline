@@ -94,6 +94,10 @@ class Pipeline:
 
             if pclass==None:
                 print("ERROR: Plugin not found: %s" % stageinfo.plugin_name)
+                if stageinfo.plugin_name==None or stageinfo.plugin_name=="":
+                    print "It appears that no plugin was defined for the current stage."
+                    print "stagename:"
+                    print "    
                 raise Exception
             else:
                 self.__gen_depends(f, pclass(), stageinfo.exectype, stageinfo.args)
@@ -117,7 +121,10 @@ class Pipeline:
         except:
             self.datasets=self.datasets
 
-        self.env=td['environment']
+        try:
+            self.env=td['environment']
+        except:
+            self.env=""
 
         try:
             print("Plugindir: "+str(td['plugindir']))

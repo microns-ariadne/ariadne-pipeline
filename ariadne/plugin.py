@@ -4,7 +4,7 @@ import os
 import sys
 import tools
 import nose
-import scripts
+#import scripts -- Removed
 
 PLUGIN_TYPE_ARCHIVE="ArchivePlugin"
 PLUGIN_TYPE_GENERIC="Plugin"

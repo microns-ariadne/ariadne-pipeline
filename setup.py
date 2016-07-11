@@ -19,7 +19,7 @@ setup(
     name='ariadne-pipeline',
     version='1.0a12',
     description="Run, and manage machine learning pipelines.",
-    scripts=['scripts/ariadne', 'ariadne/ariadne_cli.py', 'ariadne/shell2pipe.py', 'scripts/ariadne-download.sh'],
+    scripts=['ariadne/ariadne', 'ariadne/ariadne_cli.py', 'ariadne/shell2pipe.py', 'scripts/ariadne-download.sh'],
     include_package_data=True,
     install_requires=['h5py', 'nose', 'luigi'],
     packages=['ariadne', 'plugins', 'examples'],#find_packages(exclude=['tests', 'scripts', 'bin', 'plugins']),

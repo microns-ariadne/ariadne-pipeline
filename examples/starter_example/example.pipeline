@@ -1,0 +1,10 @@
+stages:
+    add:
+        plugin: add
+        runtype: run
+    end
+end
+
+plugindir:
+    plugins
+end
